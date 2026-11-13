@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Study Hub">
   <meta name="description" content="アカウントごとに会話・教材・復習履歴を分けて学習できます。">
-  <title>Study Hub 5.0 — アカウント切り替え・PINログイン</title>
+  <title>Study Hub 5.1 — 教科の整理・非表示・削除</title>
   <style>
     :root {--bg:#f3f6f5;--paper:#fff;--ink:#172c36;--muted:#617781;--line:#e2eae7;--primary:#197c74;--primary-weak:#e6f5ef;--nav:#14303a;--amber:#e5ac51;--red:#c75449;--shadow:0 8px 30px rgba(15,39,46,.045)}
     *{box-sizing:border-box} html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
@@ -77,6 +77,12 @@
     .subject-card strong{font-size:13px}.subject-card small{font-size:11px;color:var(--muted)}.subject-card .subject-new{font-size:11px;color:var(--primary);font-weight:750;margin-top:auto}
     .thread-compose{border:1px solid #d5e7de;padding:14px;border-radius:12px;margin-top:15px;background:#f7faf8;display:grid;gap:12px}
     @media(max-width:850px){.thread-layout{grid-template-columns:1fr}.thread-list{max-height:260px}.thread-transcript{max-height:48vh}}
+    .subject-manager-list{display:grid;gap:9px;max-height:53vh;overflow:auto;margin-top:13px}
+    .subject-manager-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid #e1eae7;border-radius:12px;background:#fff}
+    .subject-manager-row.is-hidden{background:#f5f7f6;opacity:.83}
+    .subject-manager-name{display:flex;align-items:center;gap:10px;min-width:0}
+    .subject-manager-name strong{display:block;overflow-wrap:anywhere}.subject-manager-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    @media(max-width:650px){.subject-manager-row{align-items:flex-start}.subject-manager-name{flex:1}.subject-manager-actions{flex-direction:column}}
     @media(max-width:650px){.subject-dashboard{padding:14px}.subject-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.subject-card{min-height:132px}}
 
 /* v5 - account selector, fully hidden app until unlocked */
@@ -181,13 +187,24 @@ window.bootStudyHub = function(){
   try{state=JSON.parse(localStorage.getItem(storageKey)||'null');if(!state||!Array.isArray(state.questions)||!Array.isArray(state.attempts))throw new Error('invalid');}catch(e){state=makeSeed()}
   state.notes ||= {};state.materials ||= [];state.plans ||= [];state.studyMinutes ||= {};
   state.customCourses ||= [];
-  const defaultCourseIds=new Set(courses.map(c=>c.id));
-  function syncCustomCourses(){
-    courses.splice(0,courses.length,...courses.filter(c=>defaultCourseIds.has(c.id)));
+  state.hiddenCourses = Array.isArray(state.hiddenCourses) ? state.hiddenCourses.filter(id=>typeof id==='string') : [];
+  const builtinCourses=courses.map(c=>({...c}));
+  const defaultCourseIds=new Set(builtinCourses.map(c=>c.id));
+  function allCourses(){
+    const list=builtinCourses.map(c=>({...c}));
     for(const c of state.customCourses||[]){
-      if(!c||!/^course-[a-z0-9]+$/i.test(c.id)||defaultCourseIds.has(c.id)||courses.some(x=>x.id===c.id))continue;
-      courses.push({id:c.id,name:String(c.name||'新しい教科').slice(0,50),icon:'📘',color:'#e9f5f0',topic:'自分の学習'});
+      if(!c||!/^course-[a-z0-9]+$/i.test(c.id)||defaultCourseIds.has(c.id)||list.some(x=>x.id===c.id))continue;
+      list.push({id:c.id,name:String(c.name||'新しい教科').slice(0,50),icon:'📘',color:'#e9f5f0',topic:'自分の学習'});
     }
+    return list;
+  }
+  function syncCustomCourses(){
+    const all=allCourses();
+    const known=new Set(all.map(c=>c.id));
+    state.hiddenCourses=[...new Set(state.hiddenCourses||[])].filter(id=>known.has(id));
+    courses.splice(0,courses.length,...all.filter(c=>!state.hiddenCourses.includes(c.id)));
+    // 少なくとも「その他」は選択できる状態を維持する。
+    if(!courses.length){state.hiddenCourses=state.hiddenCourses.filter(id=>id!=='other');courses.splice(0,courses.length,...all.filter(c=>!state.hiddenCourses.includes(c.id)))}
   }
   syncCustomCourses();
   // 数学は既存の4択問題も最終回答・途中式を答える形式に切り替える（過去の回答履歴は維持）
@@ -200,7 +217,7 @@ window.bootStudyHub = function(){
   migrateWrittenMath();
   let page='home'; let course='math';let quizFilter='all';let quizMode='normal';let qid=null;let chosen=null;let graded=false;let gradeGood=false;let writtenDraft='';let writtenRevealed=false;let openPDFUrl=null;let startTime=Date.now();
   const save=()=>{try{localStorage.setItem(storageKey,JSON.stringify(state));return true}catch(e){toast('保存容量が不足しています。バックアップしてください。');return false}};
-  const byCourse=id=>courses.find(c=>c.id===id)||{name:'その他',icon:'📘',topic:'',color:'#eaf0f0'};
+  const byCourse=id=>allCourses().find(c=>c.id===id)||{name:'その他',icon:'📘',topic:'',color:'#eaf0f0'};
   const attemptsFor=id=>state.attempts.filter(a=>a.courseId===id);
   const correctRate=arr=>arr.length?Math.round(arr.filter(a=>a.correct).length/arr.length*100):0;
   const due=q=>q.seen && (!q.nextDue || q.nextDue<=ymd());
@@ -269,7 +286,7 @@ window.bootStudyHub = function(){
   function showAddPlan(){modal(`<div class="modal-head"><h2>学習計画を追加</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div><form id="planForm"><div class="form-grid"><div class="field full"><label for="planTitle">やること</label><input id="planTitle" required maxlength="150" placeholder="例：広義積分の問題を10問解く"></div><div class="field"><label for="planCourse">科目</label>${courseSelector('planCourse',course)}</div><div class="field"><label for="planDate">期限</label><input id="planDate" type="date" required value="${ymd()}"></div></div><div class="modal-actions"><button type="button" class="btn secondary" data-action="close-modal">キャンセル</button><button type="submit" class="btn">追加する</button></div></form>`)}
   function showBackup(){modal(`<div class="modal-head"><h2>バックアップと復元</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div><p class="info">登録した問題・正答履歴・ノート・計画を保存できます。<b>PDFファイル本体は含まれません。</b> 復元すると学習データはバックアップの状態に置き換わります。</p><div class="row-start">${button('バックアップを保存','export','')}${button('バックアップを読み込む','import')}</div><div class="hr"></div><p class="info">端末を替えたり、サイトのデータを削除したりすると記録が失われる場合があります。大切な学習データは定期的にバックアップしてください。</p>`)}
   function exportData(){const copy=JSON.parse(JSON.stringify(state));copy.materials=state.materials.map(m=>({...m,pdfNotIncluded:true}));const blob=new Blob([JSON.stringify({...copy,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='study-hub-backup-'+ymd()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('学習データのバックアップを作成しました（PDF本体を除く）')}
-  function importData(){const input=document.createElement('input');input.type='file';input.accept='.json,application/json';input.onchange=async()=>{try{const s=JSON.parse(await input.files[0].text());if(!Array.isArray(s.questions)||!Array.isArray(s.attempts)||!s.notes||!Array.isArray(s.plans))throw Error('形式が違います');if(!confirm('学習データを上書きします。続けますか？（PDF本体は復元されません）'))return;state={...makeSeed(),...s,materials:[]};state.customCourses||=[];syncCustomCourses();migrateWrittenMath();save();closeModal();navigate('home');toast('バックアップを復元しました。PDFは必要に応じて再登録してください。')}catch(e){toast('読み込みに失敗しました。Study HubのJSONを選んでください。')}};input.click()}
+  function importData(){const input=document.createElement('input');input.type='file';input.accept='.json,application/json';input.onchange=async()=>{try{const s=JSON.parse(await input.files[0].text());if(!Array.isArray(s.questions)||!Array.isArray(s.attempts)||!s.notes||!Array.isArray(s.plans))throw Error('形式が違います');if(!confirm('学習データを上書きします。続けますか？（PDF本体は復元されません）'))return;state={...makeSeed(),...s,materials:[]};state.customCourses||=[];state.hiddenCourses ||= [];syncCustomCourses();migrateWrittenMath();course=courses.some(x=>x.id===course)?course:courses[0].id;save();closeModal();navigate('home');toast('バックアップを復元しました。PDFは必要に応じて再登録してください。')}catch(e){toast('読み込みに失敗しました。Study HubのJSONを選んでください。')}};input.click()}
   function openDatabase(){return new Promise((resolve,reject)=>{if(!('indexedDB'in window))return reject(new Error('IndexedDB未対応'));const req=indexedDB.open(window.studyHubProfile.legacy?'study-hub-pdf-v1':'study-hub-pdf-v1-profile-'+window.studyHubProfile.id,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('files'))req.result.createObjectStore('files')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
   async function dbAction(mode,fn){const db=await openDatabase();return new Promise((resolve,reject)=>{let t=db.transaction('files',mode),s=t.objectStore('files'),req=fn(s);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);t.oncomplete=()=>db.close();t.onabort=()=>reject(t.error)})}
   const dbPut=(k,v)=>dbAction('readwrite',s=>s.put(v,k));const dbGet=k=>dbAction('readonly',s=>s.get(k));const dbDel=k=>dbAction('readwrite',s=>s.delete(k));
@@ -278,7 +295,7 @@ window.bootStudyHub = function(){
   async function submitPDF(){const file=$('#pdfFile').files[0];if(!file){toast('PDFを選択してください');return}if(file.size>25*1024*1024){toast('25MBを超えています');return}if(!file.name.toLowerCase().endsWith('.pdf')&&file.type!=='application/pdf'){toast('PDFを選択してください');return}const id=uid();try{await dbPut(id,file);state.materials.push({id,name:file.name,courseId:$('#pdfCourse').value,created:ymd(),size:file.size});save();closeModal();render();toast('PDFを追加しました')}catch(e){toast('PDFを保存できません。ストレージ容量やブラウザ設定を確認してください。')}}
   function startQuiz(mode='normal',filter='all'){quizMode=mode;quizFilter=filter;qid=null;navigate('quiz')}
   document.addEventListener('click',async e=>{const navBtn=e.target.closest('[data-nav]');if(navBtn){navigate(navBtn.dataset.nav);return}const choice=e.target.closest('[data-choice]');if(choice&&!graded){chosen=Number(choice.dataset.choice);renderQuiz();return}const aiAct=e.target.closest('[data-ai]');if(aiAct){handleAIAction(aiAct);return}const act=e.target.closest('[data-action]')?.dataset.action;if(!act)return;
-    if(act.startsWith('nav-'))return navigate(act.slice(4));if(act.startsWith('study-pdf:')){aiPdfId=act.slice(10);aiPdfDoc=null;aiChat=[];navigate('ai');return;}if(act==='start-quiz')return startQuiz();if(act==='start-course-quiz')return startQuiz('normal',course);if(act==='start-review')return startQuiz('review','all');if(act==='next-quiz'){nextQuestion();renderQuiz();return}if(act==='grade-quiz'){grade();return}if(act.startsWith('mark-written:')){markWritten(act.endsWith('correct'));return}if(act==='add-question')return showAddQuestion();if(act==='new-thread')return threadNewModal(threadCourseFilter==='all'?'math':threadCourseFilter);if(act==='new-subject')return threadAddSubjectModal();if(act==='add-pdf')return showAddPDF();if(act==='add-plan')return showAddPlan();if(act==='close-modal')return closeModal();if(act==='save-note'){state.notes[course]=$('#noteText').value;save();$('#noteStatus').textContent='保存しました ✓';toast('ノートを保存しました');return}if(act==='export')return exportData();if(act==='import')return importData();if(act==='reset'){if(confirm('すべての学習記録・ノート・問題・計画を初期化しますか？ PDFファイルの削除は別途必要です。')){state={...makeSeed(),materials:state.materials,customCourses:state.customCourses};syncCustomCourses();migrateWrittenMath();save();qid=null;closeModal();navigate('home');toast('学習データを初期化しました')}return}if(act.startsWith('pdf:'))return openPDF(act.slice(4));if(act.startsWith('delpdf:'))return deletePDF(act.slice(7));if(act.startsWith('delplan:')){if(confirm('この計画を削除しますか？')){state.plans=state.plans.filter(x=>x.id!==act.slice(8));save();render()}return}
+    if(act.startsWith('nav-'))return navigate(act.slice(4));if(act.startsWith('study-pdf:')){aiPdfId=act.slice(10);aiPdfDoc=null;aiChat=[];navigate('ai');return;}if(act==='start-quiz')return startQuiz();if(act==='start-course-quiz')return startQuiz('normal',course);if(act==='start-review')return startQuiz('review','all');if(act==='next-quiz'){nextQuestion();renderQuiz();return}if(act==='grade-quiz'){grade();return}if(act.startsWith('mark-written:')){markWritten(act.endsWith('correct'));return}if(act==='add-question')return showAddQuestion();if(act==='new-thread')return threadNewModal(threadCourseFilter==='all'?(courses[0]?.id||'other'):threadCourseFilter);if(act==='new-subject')return threadAddSubjectModal();if(act==='manage-subjects')return threadManageSubjectsModal();if(act==='add-pdf')return showAddPDF();if(act==='add-plan')return showAddPlan();if(act==='close-modal')return closeModal();if(act==='save-note'){state.notes[course]=$('#noteText').value;save();$('#noteStatus').textContent='保存しました ✓';toast('ノートを保存しました');return}if(act==='export')return exportData();if(act==='import')return importData();if(act==='reset'){if(confirm('すべての学習記録・ノート・問題・計画を初期化しますか？ PDFファイルの削除は別途必要です。')){state={...makeSeed(),materials:state.materials,customCourses:state.customCourses,hiddenCourses:state.hiddenCourses};syncCustomCourses();migrateWrittenMath();save();qid=null;closeModal();navigate('home');toast('学習データを初期化しました')}return}if(act.startsWith('pdf:'))return openPDF(act.slice(4));if(act.startsWith('delpdf:'))return deletePDF(act.slice(7));if(act.startsWith('delplan:')){if(confirm('この計画を削除しますか？')){state.plans=state.plans.filter(x=>x.id!==act.slice(8));save();render()}return}
   });
   document.addEventListener('change',e=>{const el=e.target;if(el.id==='cqCourse'||el.id==='cqType'){updateQuestionFields();return}else if(el.id==='aiMaterialPicker'){aiPdfId=el.value;aiPdfDoc=null;aiChat=[];renderAI();return}else if(el.id==='learnCourse'){course=el.value;renderLearn()}else if(el.id==='quizCourse'){quizFilter=el.value;qid=null;renderQuiz()}else if(el.id==='quizMode'){quizMode=el.value;qid=null;renderQuiz()}else if(el.dataset.planCheck){const p=state.plans.find(x=>x.id===el.dataset.planCheck);if(p){p.done=el.checked;save();render()}}});
   document.addEventListener('submit',e=>{if(e.target.id==='aiChatForm'){e.preventDefault();sendAIChat();return}else if(e.target.id==='questionForm'){
@@ -444,8 +461,8 @@ window.bootStudyHub = function(){
   // コード内に外部送信はなく、GitHubにも個人的な会話を保存しません。
   const threadCourses=courses.map(c=>[c.id,c.name]);
   let threadDB=null,threadMetas=[],threadCurrent=null,threadSelection='',threadQuery='',threadCourseFilter='all',threadImportBusy=false,threadFulltextIds=null;
-  const threadOptions=(current)=>threadCourses.map(([k,n])=>`<option value="${k}" ${k===current?'selected':''}>${n}</option>`).join('');
-  const threadCourseName=c=>threadCourses.find(x=>x[0]===c)?.[1]||'その他';
+  const threadOptions=(current)=>threadCourses.map(([k,n])=>`<option value="${k}" ${k===current?'selected':''}>${escapeHTML(n)}</option>`).join('')+(current&&current!=='all'&&!threadCourses.some(([k])=>k===current)?`<option value="${escapeHTML(current)}" selected>${escapeHTML(threadCourseName(current))}（非表示中）</option>`:'');
+  const threadCourseName=c=>allCourses().find(x=>x.id===c)?.name||'その他';
   function threadOpenDB(){return new Promise((resolve,reject)=>{
     if(threadDB)return resolve(threadDB);
     if(!window.indexedDB)return reject(Error('このブラウザは端末内データベースに対応していません'));
@@ -489,9 +506,9 @@ window.bootStudyHub = function(){
       ['chinese',/中国語|中国語訳|ピンイン/],
       ['ethics',/倫理|哲学|功利主義|義務論|徳倫理/],
     ];
-    for(const [c,re] of patterns)if(re.test(title))return c;
-    for(const [c,re] of patterns)if(re.test(preview.slice(0,250)))return c;
-    return 'other';
+    for(const [c,re] of patterns)if(re.test(title)&&courses.some(x=>x.id===c))return c;
+    for(const [c,re] of patterns)if(re.test(preview.slice(0,250))&&courses.some(x=>x.id===c))return c;
+    return courses.some(c=>c.id==='other')?'other':courses[0].id;
   }
   function threadMsgText(m){
     if(!m)return '';
@@ -552,7 +569,7 @@ window.bootStudyHub = function(){
     $('#threadResultCount').textContent=rows.length+'件';
   }
   function subjectCards(){
-    return `<div class="subject-dashboard"><div class="row" style="margin-bottom:14px;flex-wrap:wrap"><div><h2 style="margin:0">教科から始める</h2><div class="tiny muted">教科をタップすると、その教科の新しい会話を作れます。</div></div>${button('＋ 教科を追加','new-subject','')}</div>
+    return `<div class="subject-dashboard"><div class="row" style="margin-bottom:14px;flex-wrap:wrap"><div><h2 style="margin:0">教科から始める</h2><div class="tiny muted">教科をタップすると、その教科の新しい会話を作れます。不要な教科は「教科を整理」から非表示にできます。</div></div><div class="row-start">${button('教科を整理','manage-subjects','secondary')}${button('＋ 教科を追加','new-subject','')}</div></div>
     <div class="subject-grid">${courses.map(c=>{const n=threadMetas.filter(x=>x.course===c.id).length;
     return `<button class="subject-card" data-thread-newcourse="${escapeHTML(c.id)}" aria-label="${escapeHTML(c.name)}で新しい会話を作る"><span class="subject-icon" style="background:${c.color}">${escapeHTML(c.icon)}</span><strong>${escapeHTML(c.name)}</strong><small>${n}件の会話</small><span class="subject-new">＋ 新しい会話</span></button>`}).join('')}</div></div>`;
   }
@@ -588,6 +605,48 @@ window.bootStudyHub = function(){
     modal(`<div class="modal-head"><h2>新しい学習会話</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div><form id="threadNewForm"><div class="field"><label for="threadNewCourse">教科</label><select class="ui" id="threadNewCourse">${threadOptions(courseId)}</select></div><div class="field" style="margin-top:12px"><label for="threadNewTitle">会話のタイトル</label><input id="threadNewTitle" class="ui" required maxlength="160" placeholder="例：広義積分の理解"></div><div class="field" style="margin-top:12px"><label for="threadNewText">最初のメモ（空欄でもOK）</label><textarea id="threadNewText" class="ui" rows="5" placeholder="最初の質問や勉強したいことを書こう"></textarea></div><p class="info">会話を作った後も発言を追加できます。自動でAIの返事が来る機能ではありません。</p><div class="modal-actions"><button class="btn secondary" type="button" data-action="close-modal">キャンセル</button><button class="btn" type="submit">この会話を作る</button></div></form>`)
   }
   function threadAddSubjectModal(){modal(`<div class="modal-head"><h2>教科を追加</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div><form id="threadCourseForm"><div class="field"><label for="newSubjectName">教科名</label><input id="newSubjectName" class="ui" maxlength="50" required placeholder="例：物理化学、薬理学"></div><p class="info">追加した教科は会話・問題演習・ノートの選択肢にも表示されます。</p><div class="modal-actions"><button class="btn secondary" type="button" data-action="close-modal">キャンセル</button><button class="btn" type="submit">追加する</button></div></form>`)}
+  function threadManageSubjectsModal(){
+    const all=allCourses();
+    const hidden=new Set(state.hiddenCourses||[]);
+    const items=all.map(c=>{
+      const isHidden=hidden.has(c.id),custom=!defaultCourseIds.has(c.id);
+      const data=(state.questions||[]).filter(q=>q.courseId===c.id).length+(state.materials||[]).filter(m=>m.courseId===c.id).length+threadMetas.filter(m=>m.course===c.id).length;
+      return `<div class="subject-manager-row ${isHidden?'is-hidden':''}"><div class="subject-manager-name"><span class="subject-icon" style="background:${c.color}">${escapeHTML(c.icon)}</span><div><strong>${escapeHTML(c.name)}</strong><small class="muted">${isHidden?'非表示中':'表示中'}${data?' · 問題・PDF・会話 '+data+'件':''}</small></div></div><div class="subject-manager-actions"><button type="button" class="btn ${isHidden?'secondary':'danger'} sm" data-thread-action="toggle-subject" data-course-id="${escapeHTML(c.id)}">${isHidden?'再表示':'非表示'}</button>${custom?`<button type="button" class="btn secondary sm" data-thread-action="remove-subject" data-course-id="${escapeHTML(c.id)}">削除</button>`:''}</div></div>`;
+    }).join('');
+    modal(`<div class="modal-head"><h2>教科を整理する</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div><p class="info">「非表示」は、教科一覧や選択欄から隠すだけです。会話・PDF・問題・ノート・履歴は消えず、いつでも再表示できます。会話一覧の「すべて」から過去の会話は探せます。</p><div class="subject-manager-list">${items}</div><p class="info" style="margin-top:13px">「削除」は自分で追加した教科だけが対象で、関連するデータが残っている場合は削除できません。まずは非表示をおすすめします。</p><div class="modal-actions"><button class="btn" type="button" data-action="close-modal">完了</button></div>`);
+  }
+  async function threadToggleSubject(id){
+    const item=allCourses().find(c=>c.id===id);if(!item)return;
+    const hidden=state.hiddenCourses.includes(id);
+    if(!hidden){
+      if(courses.length<=1){toast('少なくとも1つの教科を表示してください');return}
+      if(!confirm(`「${item.name}」を教科一覧から非表示にしますか？\n会話・PDF・問題・学習記録は削除されず、いつでも元に戻せます。`))return;
+      state.hiddenCourses.push(id);
+    }else state.hiddenCourses=state.hiddenCourses.filter(x=>x!==id);
+    syncCustomCourses();threadCourses.splice(0,threadCourses.length,...courses.map(c=>[c.id,c.name]));
+    if(!courses.some(c=>c.id===course))course=courses[0].id;
+    if(!courses.some(c=>c.id===quizFilter)&&quizFilter!=='all')quizFilter='all';
+    if(!courses.some(c=>c.id===threadCourseFilter))threadCourseFilter='all';
+    save();render();threadManageSubjectsModal();toast(`${item.name}を${hidden?'再表示':'非表示に'}しました`);
+  }
+  async function threadRemoveSubject(id){
+    const item=allCourses().find(c=>c.id===id);
+    if(!item||defaultCourseIds.has(id))return toast('初期教科は削除できません。非表示にしてください。');
+    // IndexedDBにある会話も直接確認。未読み込みの会話の消失・孤立を防ぐ。
+    const metas=await threadAllMeta();
+    const used=(state.questions||[]).some(q=>q.courseId===id)||(state.attempts||[]).some(a=>a.courseId===id)||
+      (state.materials||[]).some(m=>m.courseId===id)||(state.plans||[]).some(p=>p.courseId===id)||
+      !!(state.notes||{})[id]||metas.some(m=>m.course===id);
+    if(used){toast('関連する学習データがあるため削除できません。「非表示」を使ってください。');return}
+    if(!confirm(`追加教科「${item.name}」を完全に削除しますか？\n元に戻す場合は作り直しが必要です。`))return;
+    state.customCourses=state.customCourses.filter(c=>c.id!==id);
+    state.hiddenCourses=state.hiddenCourses.filter(x=>x!==id);
+    syncCustomCourses();threadCourses.splice(0,threadCourses.length,...courses.map(c=>[c.id,c.name]));
+    if(course===id)course=courses[0].id;
+    if(quizFilter===id)quizFilter='all';
+    if(threadCourseFilter===id)threadCourseFilter='all';
+    save();render();threadManageSubjectsModal();toast(item.name+'を削除しました');
+  }
   function questionFromThread(){if(!threadCurrent)return;
     const chat=threadCurrent;const title=chat.title.trim();const digest=chat.digest?.trim()||threadExtract(chat).replace(/（自動で拾える要点がありません[^）]*）/g,'').trim();
     const math=chat.course==='math';
@@ -654,7 +713,7 @@ window.bootStudyHub = function(){
   async function threadExportNotes(){
     const db=await threadOpenDB();
     const chats=await new Promise((resolve,reject)=>{const r=db.transaction('chats','readonly').objectStore('chats').getAll();r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>reject(r.error)});
-    const text=JSON.stringify({format:'study-hub-v4-conversations',exportedAt:new Date().toISOString(),customCourses:state.customCourses||[],chats});
+    const text=JSON.stringify({format:'study-hub-v4-conversations',exportedAt:new Date().toISOString(),customCourses:state.customCourses||[],hiddenCourses:state.hiddenCourses||[],chats});
     const url=URL.createObjectURL(new Blob([text],{type:'application/json;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download='study-hub-会話バックアップ-'+ymd()+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),6000);
     toast(chats.length+'件の会話とノートをバックアップしました（PDF本体は対象外）');
@@ -670,6 +729,7 @@ window.bootStudyHub = function(){
           if(Array.isArray(data.customCourses))for(const c of data.customCourses){
             if(c&&/^course-[a-z0-9]+$/i.test(c.id)&&typeof c.name==='string'&&!state.customCourses.some(x=>x.id===c.id))state.customCourses.push({id:c.id,name:c.name.slice(0,50)});
           }
+          // バックアップから追加教科を復元。非表示の設定は現端末を優先します。
           syncCustomCourses();threadCourses.splice(0,threadCourses.length,...courses.map(c=>[c.id,c.name]));save();
           for(const chat of data.chats){if(!chat?.id||!Array.isArray(chat.messages)||!chat.title)continue;await threadSave(chat);n++}
           threadMetas=await threadAllMeta();threadCurrent=null;threadSelection='';renderThreads();toast(n+'件の会話を復元しました');return;
@@ -697,8 +757,10 @@ window.bootStudyHub = function(){
       if(a==='import')return threadImportPicker();
       if(a==='fulltext')return await threadSearchFulltext();
       if(a==='paste')return threadPasteModal();
-      if(a==='new-thread')return threadNewModal(threadCourseFilter==='all'?'math':threadCourseFilter);
+      if(a==='new-thread')return threadNewModal(threadCourseFilter==='all'?(courses[0]?.id||'other'):threadCourseFilter);
       if(a==='new-subject')return threadAddSubjectModal();
+      if(a==='toggle-subject')return await threadToggleSubject(e.target.closest('[data-course-id]')?.dataset.courseId);
+      if(a==='remove-subject')return await threadRemoveSubject(e.target.closest('[data-course-id]')?.dataset.courseId);
       if(a==='make-question')return questionFromThread();
       if(a==='rename-thread'){if(!threadCurrent)return;const next=prompt('新しい会話タイトル',threadCurrent.title);if(next===null)return;const title=next.trim().slice(0,160);if(!title)return toast('タイトルを入力してください');threadCurrent.title=title;threadCurrent.updated=new Date().toISOString();await threadSave(threadCurrent);threadMetas=await threadAllMeta();renderThreads();return;}
       if(a==='save-digest')return await threadSaveDigest();
