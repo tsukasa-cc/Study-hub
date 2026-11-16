@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Study Hub">
   <meta name="description" content="アカウントごとに会話・教材・復習履歴を分けて学習できます。">
-  <title>Study Hub 5.3 — PDFのコピペ登録</title>
+  <title>Study Hub 5.4 — 会話をそのまま保存</title>
   <style>
     :root {--bg:#f3f6f5;--paper:#fff;--ink:#172c36;--muted:#617781;--line:#e2eae7;--primary:#197c74;--primary-weak:#e6f5ef;--nav:#14303a;--amber:#e5ac51;--red:#c75449;--shadow:0 8px 30px rgba(15,39,46,.045)}
     *{box-sizing:border-box} html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
@@ -51,6 +51,13 @@
     @media(max-width:1020px){.ai-grid{grid-template-columns:1fr}.ai-pdf-stage{max-height:57vh}}
     @media(max-width:650px){.ai-settings-grid{grid-template-columns:1fr}.ai-msg{font-size:12px}.ai-pdf-stage{max-height:57vh}.ai-chat{max-height:42vh}}
 
+    /* v5.4: chat transcript paste & preview */
+    .conversation-import-banner{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 18px;border:1px solid #c5e3d2;background:linear-gradient(130deg,#e9f7ee,#f8fcf9);border-radius:13px;margin-bottom:16px}
+    .conversation-import-banner h3{margin:0 0 3px;font-size:15px}
+    .conversation-import-banner p{margin:0;color:#58786d;font-size:12px}
+    .thread-paste-status{background:#edf7f1;border:1px solid #cfe8d9;border-radius:11px;padding:11px 13px;color:#315c50;font-size:12px;line-height:1.7;margin-top:11px;white-space:pre-wrap}
+    .thread-paste-help{font-size:12px;line-height:1.8;color:#59736b;background:#f7faf8;padding:12px;border-radius:11px;margin-top:10px}
+    .thread-source-link{overflow-wrap:anywhere;display:inline-flex;gap:5px;align-items:center;color:#216a60;font-size:12px;margin-top:3px}
     /* 会話整理 v3.0: 全てブラウザ内で処理し、外部送信しない */
     .thread-hero{background:#e5f5ed;border:1px solid #bedacc;border-radius:16px;padding:20px;margin-bottom:18px}
     .thread-hero h2{margin:0 0 8px;font-size:20px}.thread-hero p{margin:0;color:#47655f;line-height:1.75}
@@ -251,7 +258,7 @@ window.bootStudyHub = function(){
     <div class="metrics"><div class="metric card"><div class="label">♻ 復習待ち</div><div class="value">${n}<small>問</small></div><div class="sub">${n?'今日できる復習があります':'いまは復習待ちはありません'}</div></div><div class="metric card"><div class="label">✓ 今日の回答</div><div class="value">${count}<small>問</small></div><div class="sub">正誤を記録します</div></div><div class="metric card"><div class="label">◷ 今週の学習</div><div class="value">${daysPast(7)}<small>分</small></div><div class="sub">画面を開いた時間の概算</div></div></div>
     <div class="cols"><div class="card"><div class="row"><h2 style="margin:0">科目ごとの学習状況</h2>${button('教科・会話へ →','nav-threads')}</div><div style="margin-top:14px">${courseRows()}</div></div>
     <div class="stack"><div class="card"><div class="row"><h2 style="margin:0">今日のおすすめ</h2><span class="tag">STEP 01</span></div><div style="margin-top:16px"><div style="font-size:17px;font-weight:800">${n?'復習から始めよう':'新しい問題に挑戦しよう'}</div><p class="muted tiny">${n?`復習予定の${n}問を確認しましょう。`:'解いた問題が記録され、復習予定が作られます。'}</p>${button(n?'復習する →':'演習へ →',n?'nav-review':'nav-quiz','')}</div></div><div class="card"><div class="row"><h2 style="margin:0">直近の学習計画</h2>${button('計画を追加','add-plan')}</div>${plansHTML(3)}</div></div></div>`}
-  function renderMaterials(){let rows=state.materials.map(m=>`<div class="material"><div class="material-icon">PDF</div><div class="material-text"><strong title="${escapeHTML(m.name)}">${escapeHTML(m.name)}</strong><small>${escapeHTML(byCourse(m.courseId).name)} · ${dateJa(m.created||ymd())} · ${Math.ceil(m.size/1024)} KB</small></div><div class="row-start">${button('AIで学ぶ','study-pdf:'+m.id)}${button('開く','pdf:'+m.id)}${button('削除','delpdf:'+m.id,'danger sm')}</div></div>`).join('');$('#page-materials').innerHTML=`<div class="notice">PDFはファイル選択のほか、コピーしたPDF・PDFリンク・文章の貼り付けでも追加できます。このブラウザの端末内に保存します。AI学習画面でPDFを表示し、指定ページをAIに解説してもらえます（AI接続設定が必要です）。機種変更前には元PDFも別途保管してください。</div><div class="toolbar"><div><h2 style="margin:0 0 4px">教材ライブラリ</h2><div class="muted tiny">資料を科目別に整理。学習画面からも開けます。</div></div>${button('＋ PDFを追加','add-pdf','')}</div><div class="module-list">${rows||'<div class="empty"><div class="emoji">📑</div><strong>まだ教材がありません</strong>PDFを追加すると、ここに表示されます。</div>'}</div>`}
+  function renderMaterials(){let rows=state.materials.map(m=>`<div class="material"><div class="material-icon">PDF</div><div class="material-text"><strong title="${escapeHTML(m.name)}">${escapeHTML(m.name)}</strong><small>${escapeHTML(byCourse(m.courseId).name)} · ${dateJa(m.created||ymd())} · ${Math.ceil(m.size/1024)} KB</small></div><div class="row-start">${button('AIで学ぶ','study-pdf:'+m.id)}${button('開く','pdf:'+m.id)}${button('削除','delpdf:'+m.id,'danger sm')}</div></div>`).join('');$('#page-materials').innerHTML=`<div class="notice">ここはPDF資料の保存場所です。<b>ChatGPTの会話はPDFに変換せず、そのまま「教科・会話」に保存できます。</b> PDFは端末内に保存し、AI学習で使用できます（AI接続は別途必要）。</div><div class="conversation-import-banner"><div><h3>💬 勉強した会話を保存したい？</h3><p>コピーしたChatGPTの会話を、質問と回答のまま教科別に保存できます。PDF化は不要です。</p></div><button class="btn" data-action="paste-conversation">会話を貼り付けて保存 →</button></div><div class="toolbar"><div><h2 style="margin:0 0 4px">教材ライブラリ</h2><div class="muted tiny">資料を科目別に整理。学習画面からも開けます。</div></div>${button('＋ PDFを追加','add-pdf','')}</div><div class="module-list">${rows||'<div class="empty"><div class="emoji">📑</div><strong>まだ教材がありません</strong>PDFを追加すると、ここに表示されます。</div>'}</div>`}
   function lectureText(cid){return {
     math:['理解の入口：広義積分','積分区間が無限に伸びる場合や、被積分関数が途中で発散する場合は、定積分をそのまま計算できません。','そこで、区間の端を有限値に置いて積分し、その値の極限をとります。極限が有限なら収束、そうでなければ発散です。'],
     organic:['理解の入口：SN1とSN2','求核置換反応では、炭素に結合した脱離基が求核剤に置き換わります。','SN1は通常2段階で進み、中間体としてカルボカチオンを形成します。SN2は背面攻撃と脱離が同時に起こります。'],
@@ -527,7 +534,7 @@ window.bootStudyHub = function(){
   async function deletePDF(id){if(!confirm('このPDFを削除しますか？'))return;try{await dbDel(id)}catch(e){}state.materials=state.materials.filter(m=>m.id!==id);save();render();toast('PDFを削除しました')}
   function startQuiz(mode='normal',filter='all'){quizMode=mode;quizFilter=filter;qid=null;navigate('quiz')}
   document.addEventListener('click',async e=>{const navBtn=e.target.closest('[data-nav]');if(navBtn){navigate(navBtn.dataset.nav);return}const choice=e.target.closest('[data-choice]');if(choice&&!graded){chosen=Number(choice.dataset.choice);renderQuiz();return}const aiAct=e.target.closest('[data-ai]');if(aiAct){handleAIAction(aiAct);return}const act=e.target.closest('[data-action]')?.dataset.action;if(!act)return;
-    if(act.startsWith('nav-'))return navigate(act.slice(4));if(act.startsWith('study-pdf:')){aiPdfId=act.slice(10);aiPdfDoc=null;aiChat=[];navigate('ai');return;}if(act==='start-quiz')return startQuiz();if(act==='start-course-quiz')return startQuiz('normal',course);if(act==='start-review')return startQuiz('review','all');if(act==='next-quiz'){nextQuestion();renderQuiz();return}if(act==='grade-quiz'){grade();return}if(act.startsWith('mark-written:')){markWritten(act.endsWith('correct'));return}if(act==='add-question')return showAddQuestion();if(act==='new-thread')return threadNewModal(threadCourseFilter==='all'?(courses[0]?.id||'other'):threadCourseFilter);if(act==='new-subject')return threadAddSubjectModal();if(act==='manage-subjects')return threadManageSubjectsModal();if(act==='add-pdf')return showAddPDF();if(act.startsWith('pdf-tab:'))return setPDFImportMode(act.split(':')[1]);if(act==='pdf-read-clipboard')return readPDFClipboard();if(act==='pdf-clear-paste'){pdfPastedFile=null;$('#pdfPasteText').value='';$('#pdfPasteName').value='';pdfPasteStatus('貼り付け欄をクリアしました。');return}if(act==='add-plan')return showAddPlan();if(act==='close-modal')return closeModal();if(act==='delete-lecture-memo')return deleteLectureMemo();if(act==='restore-lecture-memo')return restoreLectureMemo();if(act==='delete-note')return deleteOwnNote();if(act==='save-note'){state.notes[course]=$('#noteText').value;save();$('#noteStatus').textContent='保存しました ✓';toast('ノートを保存しました');return}if(act==='export')return exportData();if(act==='import')return importData();if(act==='reset'){if(confirm('すべての学習記録・ノート・問題・計画を初期化しますか？ PDFファイルの削除は別途必要です。')){state={...makeSeed(),materials:state.materials,customCourses:state.customCourses,hiddenCourses:state.hiddenCourses,deletedLectureMemos:[]};syncCustomCourses();migrateWrittenMath();save();qid=null;closeModal();navigate('home');toast('学習データを初期化しました')}return}if(act.startsWith('pdf:'))return openPDF(act.slice(4));if(act.startsWith('delpdf:'))return deletePDF(act.slice(7));if(act.startsWith('delplan:')){if(confirm('この計画を削除しますか？')){state.plans=state.plans.filter(x=>x.id!==act.slice(8));save();render()}return}
+    if(act.startsWith('nav-'))return navigate(act.slice(4));if(act.startsWith('study-pdf:')){aiPdfId=act.slice(10);aiPdfDoc=null;aiChat=[];navigate('ai');return;}if(act==='start-quiz')return startQuiz();if(act==='start-course-quiz')return startQuiz('normal',course);if(act==='start-review')return startQuiz('review','all');if(act==='next-quiz'){nextQuestion();renderQuiz();return}if(act==='grade-quiz'){grade();return}if(act.startsWith('mark-written:')){markWritten(act.endsWith('correct'));return}if(act==='add-question')return showAddQuestion();if(act==='new-thread')return threadNewModal(threadCourseFilter==='all'?(courses[0]?.id||'other'):threadCourseFilter);if(act==='new-subject')return threadAddSubjectModal();if(act==='manage-subjects')return threadManageSubjectsModal();if(act==='paste-conversation'){navigate('threads');return threadPasteModal()}if(act==='add-pdf')return showAddPDF();if(act.startsWith('pdf-tab:'))return setPDFImportMode(act.split(':')[1]);if(act==='pdf-read-clipboard')return readPDFClipboard();if(act==='pdf-clear-paste'){pdfPastedFile=null;$('#pdfPasteText').value='';$('#pdfPasteName').value='';pdfPasteStatus('貼り付け欄をクリアしました。');return}if(act==='add-plan')return showAddPlan();if(act==='close-modal')return closeModal();if(act==='delete-lecture-memo')return deleteLectureMemo();if(act==='restore-lecture-memo')return restoreLectureMemo();if(act==='delete-note')return deleteOwnNote();if(act==='save-note'){state.notes[course]=$('#noteText').value;save();$('#noteStatus').textContent='保存しました ✓';toast('ノートを保存しました');return}if(act==='export')return exportData();if(act==='import')return importData();if(act==='reset'){if(confirm('すべての学習記録・ノート・問題・計画を初期化しますか？ PDFファイルの削除は別途必要です。')){state={...makeSeed(),materials:state.materials,customCourses:state.customCourses,hiddenCourses:state.hiddenCourses,deletedLectureMemos:[]};syncCustomCourses();migrateWrittenMath();save();qid=null;closeModal();navigate('home');toast('学習データを初期化しました')}return}if(act.startsWith('pdf:'))return openPDF(act.slice(4));if(act.startsWith('delpdf:'))return deletePDF(act.slice(7));if(act.startsWith('delplan:')){if(confirm('この計画を削除しますか？')){state.plans=state.plans.filter(x=>x.id!==act.slice(8));save();render()}return}
   });
   document.addEventListener('change',e=>{const el=e.target;if(el.id==='cqCourse'||el.id==='cqType'){updateQuestionFields();return}else if(el.id==='aiMaterialPicker'){aiPdfId=el.value;aiPdfDoc=null;aiChat=[];renderAI();return}else if(el.id==='learnCourse'){course=el.value;renderLearn()}else if(el.id==='quizCourse'){quizFilter=el.value;qid=null;renderQuiz()}else if(el.id==='quizMode'){quizMode=el.value;qid=null;renderQuiz()}else if(el.dataset.planCheck){const p=state.plans.find(x=>x.id===el.dataset.planCheck);if(p){p.done=el.checked;save();render()}}});
   document.addEventListener('paste',e=>{
@@ -816,11 +823,11 @@ window.bootStudyHub = function(){
   }
   function renderThreads(){
     $('#page-threads').innerHTML=`
-      <div class="thread-hero"><h2>教科別に会話をまとめよう。</h2><p>教科を選んで新しい学習会話を作成。ChatGPTの解説を貼り付けたり、要点を残したり、復習問題にできます。<b>API課金なし</b>で保存と整理ができます。</p></div>
+      <div class="thread-hero"><h2>ChatGPTで勉強した会話を、そのまま保存。</h2><p>会話全文を貼り付けると、質問と回答を会話形式で残せます。教科別に保存・検索し、復習問題にもつなげられます。<b>API課金なし</b>。</p><div style="margin-top:13px"><button class="btn" data-thread-action="paste">📋 会話全文を貼り付ける</button></div></div>
       <div class="thread-privacy">🔒 <b>会話はこのiPadのSafari内に保存されます。</b> ChatGPTとは自動通信しません。元の会話や教材をGitHubにアップロードしないでください。データ消去に備え「会話・ノートをバックアップ」を使ってください。</div>
       ${subjectCards()}
       <div class="section-head"><h2>会話一覧</h2>${button('＋ 新しい会話','new-thread','')}</div>
-      <div class="thread-tools"><button class="btn secondary" data-thread-action="import">📥 ChatGPT履歴を読み込む</button><button class="btn secondary" data-thread-action="paste">＋ 会話をまとめて貼る</button><button class="btn secondary" data-thread-action="export">会話・ノートをバックアップ</button><button class="btn secondary" data-thread-action="restore">会話・ノートを復元</button></div>
+      <div class="thread-tools"><button class="btn secondary" data-thread-action="import">📥 ChatGPT履歴を読み込む</button><button class="btn secondary" data-thread-action="paste">📋 会話を貼り付けて保存</button><button class="btn secondary" data-thread-action="export">会話・ノートをバックアップ</button><button class="btn secondary" data-thread-action="restore">会話・ノートを復元</button></div>
       <div class="thread-tools"><input class="ui" type="search" id="threadSearch" placeholder="会話のタイトル・要点を検索" value="${escapeHTML(threadQuery)}" aria-label="会話を検索"><button class="btn secondary sm" data-thread-action="fulltext">本文も検索</button>
         <select class="ui" id="threadCourseFilter" aria-label="教科で絞り込み"><option value="all">すべての教科</option>${threadOptions(threadCourseFilter)}</select><span class="tiny muted" id="threadResultCount">0件</span></div>
       <div class="thread-layout"><div class="card"><h2>会話一覧</h2><div id="threadList" class="thread-list"><div class="thread-placeholder">読み込み中…</div></div><p class="info">タイトルと要点を検索できます。「本文も検索」から会話全体を検索できます。</p></div>
@@ -833,17 +840,19 @@ window.bootStudyHub = function(){
   function threadShowCurrent(){const root=$('#threadDetail');const chat=threadCurrent;if(!root||!chat)return;
     const notes=chat.digest||'';
     root.innerHTML=`<h2 class="thread-selected-title">${escapeHTML(chat.title)}</h2>
-      <div class="thread-mini"><span class="tiny muted">教科</span><select class="ui" id="threadCourseEdit" style="width:auto">${threadOptions(chat.course)}</select><button class="btn secondary sm" data-thread-action="rename-thread">タイトル変更</button><span class="tiny muted">${chat.messages.length}件の発言 ${chat.truncated?'（長い会話のため途中まで保存）':''}</span></div>
+      <div class="thread-mini"><span class="tiny muted">教科</span><select class="ui" id="threadCourseEdit" style="width:auto">${threadOptions(chat.course)}</select><button class="btn secondary sm" data-thread-action="rename-thread">タイトル変更</button><button class="btn secondary sm" data-thread-action="export-text">会話全文をTXT保存</button><span class="tiny muted">${chat.messages.length}件の発言 ${chat.truncated?'（長い会話のため途中まで保存）':''}</span></div>
+      ${chat.sourceUrl&&/^https:\/\//i.test(chat.sourceUrl)?`<a class="thread-source-link" href="${escapeHTML(chat.sourceUrl)}" target="_blank" rel="noopener noreferrer">元の会話リンクを開く ↗</a>`:''}
       <h2 style="margin:19px 0 10px">会話のメモ・要点</h2><p class="info">重要な公式や、つまずいた理由などを残そう。</p>
       <textarea class="ui thread-digest" id="threadDigest" placeholder="学んだことを3〜5行にまとめよう…">${escapeHTML(notes)}</textarea>
       <div class="thread-mini"><button class="btn" data-thread-action="save-digest">ノートを保存</button><button class="btn secondary" data-thread-action="extract">重要箇所の抜粋候補</button><button class="btn secondary" data-thread-action="make-question">この会話から復習問題を作る</button><button class="btn secondary" data-thread-action="copy-prompt">ChatGPT用まとめ依頼文をコピー</button></div>
       <p class="info">「復習問題を作る」は会話のタイトルとノートから問題の下書きを作ります。正しい問題・模範解答になっているか必ず編集して保存してください。</p>
       <div class="row" style="margin:20px 0 12px;flex-wrap:wrap"><h2 style="margin:0">会話の内容</h2><button class="btn secondary sm" data-thread-action="delete">この会話を削除</button></div>
-      <div class="thread-transcript" id="threadTranscript">${chat.messages.length?chat.messages.map((m,i)=>`<div class="thread-message ${m.role==='user'?'user':'assistant'}"><b>${m.role==='user'?'自分のメモ・質問':'貼り付けた解説'} · ${i+1}</b>${escapeHTML(m.text)}</div>`).join(''):'<div class="thread-placeholder">この会話はまだ空です。下の入力欄から最初のメッセージを保存してね。</div>'}</div>
+      <div class="thread-transcript" id="threadTranscript">${chat.messages.length?chat.messages.map((m,i)=>`<div class="thread-message ${m.role==='user'?'user':'assistant'}"><b>${m.role==='user'?(chat.sourceText&&!chat.messages.some(x=>x.role==='assistant')?'貼り付けた会話・メモ':'自分の質問・メモ'):'ChatGPTなどの回答'} · ${i+1}</b>${escapeHTML(m.text)}</div>`).join(''):'<div class="thread-placeholder">この会話はまだ空です。下の入力欄から最初のメッセージを保存してね。</div>'}</div>
+      ${chat.sourceText?`<details class="thread-paste-help"><summary>貼り付けた元の全文を確認する</summary><div style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto;margin-top:12px">${escapeHTML(chat.sourceText)}</div></details>`:''}
       <form id="threadMessageForm" class="thread-compose"><div class="field"><label for="threadMsgRole">内容の種類</label><select class="ui" id="threadMsgRole"><option value="user">自分の質問・メモ</option><option value="assistant">ChatGPTなどからコピーした解説</option></select></div><div class="field"><label for="threadMsgText">新しい発言・学習内容</label><textarea class="ui" id="threadMsgText" rows="4" maxlength="25000" required placeholder="疑問、気づき、解説を入力して保存…"></textarea></div><div class="row-start"><button class="btn" type="submit">この会話に追加する</button><span class="tiny muted">AIの自動返答ではなく、学習記録として保存します。</span></div></form>`;
   }
   function threadNewModal(courseId='math'){
-    modal(`<div class="modal-head"><h2>新しい学習会話</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div><form id="threadNewForm"><div class="field"><label for="threadNewCourse">教科</label><select class="ui" id="threadNewCourse">${threadOptions(courseId)}</select></div><div class="field" style="margin-top:12px"><label for="threadNewTitle">会話のタイトル</label><input id="threadNewTitle" class="ui" required maxlength="160" placeholder="例：広義積分の理解"></div><div class="field" style="margin-top:12px"><label for="threadNewText">最初のメモ（空欄でもOK）</label><textarea id="threadNewText" class="ui" rows="5" placeholder="最初の質問や勉強したいことを書こう"></textarea></div><p class="info">会話を作った後も発言を追加できます。自動でAIの返事が来る機能ではありません。</p><div class="modal-actions"><button class="btn secondary" type="button" data-action="close-modal">キャンセル</button><button class="btn" type="submit">この会話を作る</button></div></form>`)
+    modal(`<div class="modal-head"><h2>新しい学習会話</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div><form id="threadNewForm"><div class="field"><label for="threadNewCourse">教科</label><select class="ui" id="threadNewCourse">${threadOptions(courseId)}</select></div><div class="field" style="margin-top:12px"><label for="threadNewTitle">会話のタイトル</label><input id="threadNewTitle" class="ui" required maxlength="160" placeholder="例：広義積分の理解"></div><div class="field" style="margin-top:12px"><label for="threadNewText">最初のメモ（空欄でもOK）</label><textarea id="threadNewText" class="ui" rows="5" placeholder="最初の質問や勉強したいことを書こう"></textarea></div><p class="info">会話を作った後も発言を追加できます。自動でAIの返事が来る機能ではありません。</p><p class="info">すでにChatGPTで勉強した会話がある場合は、<button type="button" class="btn secondary sm" data-thread-action="paste">会話全文をまとめて貼り付ける</button>から保存できます。</p><div class="modal-actions"><button class="btn secondary" type="button" data-action="close-modal">キャンセル</button><button class="btn" type="submit">この会話を作る</button></div></form>`)
   }
   function threadAddSubjectModal(){modal(`<div class="modal-head"><h2>教科を追加</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div><form id="threadCourseForm"><div class="field"><label for="newSubjectName">教科名</label><input id="newSubjectName" class="ui" maxlength="50" required placeholder="例：物理化学、薬理学"></div><p class="info">追加した教科は会話・問題演習・ノートの選択肢にも表示されます。</p><div class="modal-actions"><button class="btn secondary" type="button" data-action="close-modal">キャンセル</button><button class="btn" type="submit">追加する</button></div></form>`)}
   function threadManageSubjectsModal(){
@@ -940,11 +949,60 @@ window.bootStudyHub = function(){
   function threadImportPicker(){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.multiple=true;i.onchange=async()=>{
     for(const f of Array.from(i.files||[]))await threadImport(f)
   };i.click()}
-  function threadPasteModal(){modal(`<div class="modal-head"><h2>会話を手動で追加</h2><button class="iconbtn" data-action="close-modal">×</button></div>
-    <form id="threadPasteForm"><div class="field"><label>タイトル</label><input class="ui" id="threadPasteTitle" required placeholder="例：広義積分の解説"></div>
-    <div class="field" style="margin-top:12px"><label>科目</label><select id="threadPasteCourse" class="ui">${threadOptions('math')}</select></div>
-    <div class="field" style="margin-top:12px"><label>会話本文やChatGPTのまとめ</label><textarea id="threadPasteText" class="ui" rows="9" required placeholder="ここに会話や要点を貼り付けてください"></textarea></div>
-    <div class="modal-actions"><button type="button" class="btn secondary" data-action="close-modal">キャンセル</button><button class="btn" type="submit">保存する</button></div></form>`)}
+  // Copy-paste ChatGPT logs. No API / network request; content remains on this device.
+  // Recognizes common transcript speakers, but never guesses when the delimiters are unclear.
+  function threadParsePaste(text,mode='auto'){
+    const original=String(text||'').replace(/\r\n?/g,'\n').trim();
+    if(!original)return {messages:[],detected:false,reason:'会話を貼り付けてください'};
+    if(original.length>280000)return {messages:[],detected:false,reason:'28万文字を超えています。会話を分けるか、ChatGPTの履歴JSONから取り込んでください。'};
+    if(mode==='single')return {messages:[{role:'user',text:original}],detected:false,reason:'全文を1つの記録として保存します'};
+    const lines=original.split('\n'),hits=[];
+    for(let i=0;i<lines.length;i++){
+      // ChatGPT, User, あなた, ユーザー and common Markdown headings.
+      const header=lines[i].replace(/^\s*#{1,6}\s*/,'').replace(/\*\*/g,'').trim();
+      const m=header.match(/^(あなた|ユーザー|自分|User|You(?:\s+said)?|ChatGPT(?:\s+said)?|Assistant|AI)(?:\s*[:：]\s*(.*))?$/i);
+      if(!m)continue;
+      const speaker=m[1].toLowerCase().replace(/\s+said$/,'');
+      hits.push({index:i,role:/^(chatgpt|assistant|ai)$/.test(speaker)?'assistant':'user',inline:m[2]||''});
+    }
+    // A lone role label in the middle of a normal note is not trustworthy.
+    if(hits.length<2&&!(hits.length===1&&hits[0].index===0))return {messages:[{role:'user',text:original}],detected:false,reason:'話者の区切りがないため、全文を1件として保存します'};
+    const messages=[];
+    for(let j=0;j<hits.length;j++){
+      const h=hits[j],until=j+1<hits.length?hits[j+1].index:lines.length;
+      const body=[h.inline,...lines.slice(h.index+1,until)].join('\n').trim();
+      if(body)messages.push({role:h.role,text:body});
+    }
+    if(!messages.length)return {messages:[{role:'user',text:original}],detected:false,reason:'区切りを見つけましたが本文がないため、全文を1件で保存します'};
+    return {messages,detected:true,reason:'話者を認識して分割しました'};
+  }
+  function threadPastePreview(){
+    const target=$('#threadPastePreview');if(!target)return;
+    const parsed=threadParsePaste($('#threadPasteText')?.value||'',$('#threadPasteMode')?.value||'auto');
+    if(!parsed.messages.length){target.textContent=parsed.reason;return}
+    const n=parsed.messages.length, u=parsed.messages.filter(m=>m.role==='user').length,a=n-u;
+    target.textContent=parsed.detected?`会話を ${n}件の発言に分けて保存します（あなた ${u}件・ChatGPT ${a}件）。\n元の貼り付け文も保存します。`:`${parsed.reason}。\nあとから発言を1件ずつ追加できます。`;
+  }
+  function threadPasteModal(){
+    const preferred=$('#threadNewCourse')?.value||((threadCourseFilter!=='all'&&allCourses().some(x=>x.id===threadCourseFilter))?threadCourseFilter:'math');
+    modal(`<div class="modal-head"><h2>💬 ChatGPTの会話を保存</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div>
+      <form id="threadPasteForm"><div class="field"><label for="threadPasteTitle">会話タイトル</label><input class="ui" id="threadPasteTitle" maxlength="160" required placeholder="例：広義積分の解説と確認問題"></div>
+      <div class="field" style="margin-top:12px"><label for="threadPasteCourse">教科</label><select id="threadPasteCourse" class="ui">${threadOptions(preferred)}</select></div>
+      <div class="field" style="margin-top:12px"><label for="threadPasteText">会話の全文を貼り付け</label><textarea id="threadPasteText" class="ui" rows="11" required placeholder="あなた: 広義積分とは何ですか？\n\nChatGPT: 積分区間が無限に広がるなどの場合の積分です。\n\nあなた: 具体例を教えてください。\n\nChatGPT: 例えば…"></textarea></div>
+      <div class="field" style="margin-top:12px"><label for="threadPasteMode">保存方法</label><select id="threadPasteMode" class="ui"><option value="auto">質問と回答に自動分割（おすすめ）</option><option value="single">分割せず全文をそのまま保存</option></select></div>
+      <div class="thread-paste-status" id="threadPastePreview" role="status" aria-live="polite">会話の全文を貼り付けてください。</div>
+      <div class="field" style="margin-top:12px"><label for="threadPasteSource">元の会話リンク（任意）</label><input class="ui" id="threadPasteSource" type="url" inputmode="url" placeholder="https://chatgpt.com/share/..."></div>
+      <div class="thread-paste-help"><strong>貼り付け方：</strong>ChatGPTの質問と回答を選択してコピーし、上の欄を長押しして「ペースト」。<b>「あなた:」「ChatGPT:」などの行があれば吹き出しに分けて保存</b>します。区切りがない文章はそのまま1件で保存します。<br><b>共有URLだけでは会話本文を取得できません。</b> 保存した内容はこの端末内・ログイン中のアカウント専用で、AIやGitHubに送信されません。</div>
+      <div class="modal-actions"><button type="button" class="btn secondary" data-action="close-modal">キャンセル</button><button class="btn" type="submit">💾 会話として保存する</button></div></form>`);
+  }
+  function threadExportText(){
+    if(!threadCurrent)return;
+    const chat=threadCurrent;
+    const raw=chat.sourceText||chat.messages.map(m=>(m.role==='assistant'?'ChatGPT':'あなた')+':\n'+m.text).join('\n\n');
+    const blob=new Blob([raw],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=(chat.title||'会話').replace(/[\\/:*?"<>|\u0000-\u001F]/g,'_').slice(0,65)+'.txt';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+    toast('会話の全文をTXTで保存しました');
+  }
   async function threadSaveDigest(){if(!threadCurrent)return;
     threadCurrent.course=$('#threadCourseEdit')?.value||threadCurrent.course;
     threadCurrent.digest=$('#threadDigest')?.value||'';
@@ -1004,7 +1062,7 @@ window.bootStudyHub = function(){
       if(a==='remove-subject')return await threadRemoveSubject(e.target.closest('[data-course-id]')?.dataset.courseId);
       if(a==='make-question')return questionFromThread();
       if(a==='rename-thread'){if(!threadCurrent)return;const next=prompt('新しい会話タイトル',threadCurrent.title);if(next===null)return;const title=next.trim().slice(0,160);if(!title)return toast('タイトルを入力してください');threadCurrent.title=title;threadCurrent.updated=new Date().toISOString();await threadSave(threadCurrent);threadMetas=await threadAllMeta();renderThreads();return;}
-      if(a==='save-digest')return await threadSaveDigest();
+      if(a==='save-digest')return await threadSaveDigest();if(a==='export-text')return threadExportText();
       if(a==='export')return await threadExportNotes();
       if(a==='restore')return threadRestorePicker();
       if(a==='extract'){if(threadCurrent){const ta=$('#threadDigest');const s=threadExtract(threadCurrent);if(ta.value.trim()&&!confirm('現在入力中のノートを抜粋候補で上書きしますか？'))return;ta.value=s;toast('要点候補を抽出しました。確認して保存してください')}return}
@@ -1014,8 +1072,8 @@ window.bootStudyHub = function(){
       }
     }catch(err){toast('操作に失敗しました：'+err.message)}
   });
-  document.addEventListener('input',e=>{if(e.target.id==='threadSearch'){threadQuery=e.target.value;threadFulltextIds=null;threadUpdateList()}});
-  document.addEventListener('change',e=>{if(e.target.id==='threadCourseFilter'){threadCourseFilter=e.target.value;threadUpdateList()}else if(e.target.id==='threadCourseEdit'&&threadCurrent){threadCurrent.course=e.target.value;threadCurrent.updated=new Date().toISOString();threadSave(threadCurrent).then(()=>threadAllMeta()).then(items=>{threadMetas=items;threadUpdateList()}).catch(err=>toast(err.message))}});
+  document.addEventListener('input',e=>{if(e.target.id==='threadSearch'){threadQuery=e.target.value;threadFulltextIds=null;threadUpdateList()}else if(e.target.id==='threadPasteText')threadPastePreview()});
+  document.addEventListener('change',e=>{if(e.target.id==='threadPasteMode'){threadPastePreview();return}if(e.target.id==='threadCourseFilter'){threadCourseFilter=e.target.value;threadUpdateList()}else if(e.target.id==='threadCourseEdit'&&threadCurrent){threadCurrent.course=e.target.value;threadCurrent.updated=new Date().toISOString();threadSave(threadCurrent).then(()=>threadAllMeta()).then(items=>{threadMetas=items;threadUpdateList()}).catch(err=>toast(err.message))}});
   document.addEventListener('submit',async e=>{
     if(e.target.id==='threadCourseForm'){
       e.preventDefault();const name=$('#newSubjectName').value.trim();if(!name)return;
@@ -1045,10 +1103,15 @@ window.bootStudyHub = function(){
     if(e.target.id!=='threadPasteForm')return;
     e.preventDefault();
     try{
-      const title=$('#threadPasteTitle').value.trim(),text=$('#threadPasteText').value.trim(),category=$('#threadPasteCourse').value;
-      if(!title||!text)return;
-      const chat={id:'manual-'+uid(),title,course:category,updated:new Date().toISOString(),messages:[{role:'user',text:text.slice(0,280000)}],digest:'',truncated:text.length>280000};
-      await threadSave(chat);closeModal();threadMetas=await threadAllMeta();threadMetas.sort((a,b)=>String(b.updated).localeCompare(String(a.updated)));threadOpen(chat.id);renderThreads();toast('会話を登録しました')
+      const title=$('#threadPasteTitle').value.trim().slice(0,160),text=$('#threadPasteText').value.trim(),category=$('#threadPasteCourse').value;
+      if(!title||!text)return toast('タイトルと会話本文を入力してください');
+      const parsed=threadParsePaste(text,$('#threadPasteMode').value);
+      if(!parsed.messages.length)return toast(parsed.reason);
+      if(parsed.messages.length>650)return toast('発言が650件を超えています。会話を分けて保存してください');
+      const urlInput=$('#threadPasteSource').value.trim();let sourceUrl='';
+      if(urlInput){try{const parsedUrl=new URL(urlInput);if(parsedUrl.protocol!=='https:')throw Error();sourceUrl=parsedUrl.href.slice(0,1500)}catch{toast('元の会話リンクはhttps://で始まるURLにしてください');return}}
+      const chat={id:'manual-'+uid(),title,course:category,updated:new Date().toISOString(),messages:parsed.messages,sourceText:text,sourceUrl,digest:'',truncated:false};
+      await threadSave(chat);closeModal();threadMetas=await threadAllMeta();threadMetas.sort((a,b)=>String(b.updated).localeCompare(String(a.updated)));await threadOpen(chat.id);renderThreads();toast('会話を'+parsed.messages.length+'件の発言として保存しました')
     }catch(err){toast('保存に失敗：'+err.message)}
   });
 
