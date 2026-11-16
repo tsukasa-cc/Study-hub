@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Study Hub">
   <meta name="description" content="アカウントごとに会話・教材・復習履歴を分けて学習できます。">
-  <title>Study Hub 5.1 — 教科の整理・非表示・削除</title>
+  <title>Study Hub 5.3 — PDFのコピペ登録</title>
   <style>
     :root {--bg:#f3f6f5;--paper:#fff;--ink:#172c36;--muted:#617781;--line:#e2eae7;--primary:#197c74;--primary-weak:#e6f5ef;--nav:#14303a;--amber:#e5ac51;--red:#c75449;--shadow:0 8px 30px rgba(15,39,46,.045)}
     *{box-sizing:border-box} html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
@@ -117,6 +117,19 @@ body.profile-unlocked #profileGate {display:none!important}
 .login-btn{width:100%;padding:12px;border:0;border-radius:12px;background:var(--primary);color:white;font-weight:800;min-height:48px}
 .login-btn:disabled{opacity:.5}.login-secondary{width:100%;padding:12px;border:1px solid #d7e8df;border-radius:12px;background:white;color:#21685a;font-weight:750;margin-top:12px}
 @media(max-width:650px){.login-shell{padding:24px 19px;border-radius:19px}.profile-list{grid-template-columns:repeat(2,minmax(0,1fr))}.login-head{font-size:23px}#profileLabel{max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+
+/* v5.3 PDF paste import */
+#pdfFilePane[hidden],#pdfPastePane[hidden]{display:none!important}
+.pdf-source-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:15px 0}
+.pdf-source-tab{background:#f4f8f6;border:1px solid #dce8e1;border-radius:10px;min-height:44px;color:#3c6961;font-weight:750;padding:10px}
+.pdf-source-tab.active{background:#e4f6ed;border-color:#68af96;color:#18685a}
+.pdf-paste-area{width:100%;border:1.5px dashed #9ebeb0;border-radius:12px;background:#fbfffc;padding:14px;min-height:130px;resize:vertical;line-height:1.75}
+.pdf-paste-area:focus{border-style:solid;background:white}
+.pdf-import-status{border-radius:10px;background:#eef6f2;color:#426b5b;padding:11px 13px;line-height:1.65;font-size:12px;margin-top:10px;overflow-wrap:anywhere}
+.pdf-import-status[data-status="error"]{background:#fff0ee;color:#a5443d}
+.pdf-import-status[data-status="success"]{background:#e7f7ee;color:#196849}
+.pdf-import-tips{line-height:1.8;font-size:12px;color:#647b76;margin:12px 0 0}
+.pdf-import-tips b{color:#385d56}.pdf-import-tips summary{cursor:pointer;color:#206d61;font-weight:750;padding:6px 0}.pdf-import-tips .pdf-import-details{padding:6px 4px 0}
 </style>
 </head>
 <body>
@@ -238,7 +251,7 @@ window.bootStudyHub = function(){
     <div class="metrics"><div class="metric card"><div class="label">♻ 復習待ち</div><div class="value">${n}<small>問</small></div><div class="sub">${n?'今日できる復習があります':'いまは復習待ちはありません'}</div></div><div class="metric card"><div class="label">✓ 今日の回答</div><div class="value">${count}<small>問</small></div><div class="sub">正誤を記録します</div></div><div class="metric card"><div class="label">◷ 今週の学習</div><div class="value">${daysPast(7)}<small>分</small></div><div class="sub">画面を開いた時間の概算</div></div></div>
     <div class="cols"><div class="card"><div class="row"><h2 style="margin:0">科目ごとの学習状況</h2>${button('教科・会話へ →','nav-threads')}</div><div style="margin-top:14px">${courseRows()}</div></div>
     <div class="stack"><div class="card"><div class="row"><h2 style="margin:0">今日のおすすめ</h2><span class="tag">STEP 01</span></div><div style="margin-top:16px"><div style="font-size:17px;font-weight:800">${n?'復習から始めよう':'新しい問題に挑戦しよう'}</div><p class="muted tiny">${n?`復習予定の${n}問を確認しましょう。`:'解いた問題が記録され、復習予定が作られます。'}</p>${button(n?'復習する →':'演習へ →',n?'nav-review':'nav-quiz','')}</div></div><div class="card"><div class="row"><h2 style="margin:0">直近の学習計画</h2>${button('計画を追加','add-plan')}</div>${plansHTML(3)}</div></div></div>`}
-  function renderMaterials(){let rows=state.materials.map(m=>`<div class="material"><div class="material-icon">PDF</div><div class="material-text"><strong title="${escapeHTML(m.name)}">${escapeHTML(m.name)}</strong><small>${escapeHTML(byCourse(m.courseId).name)} · ${dateJa(m.created||ymd())} · ${Math.ceil(m.size/1024)} KB</small></div><div class="row-start">${button('AIで学ぶ','study-pdf:'+m.id)}${button('開く','pdf:'+m.id)}${button('削除','delpdf:'+m.id,'danger sm')}</div></div>`).join('');$('#page-materials').innerHTML=`<div class="notice">PDFはこのブラウザの端末内に保存します。AI学習画面でPDFを表示し、指定ページをAIに解説してもらえます（AI接続設定が必要です）。機種変更前には元PDFも別途保管してください。</div><div class="toolbar"><div><h2 style="margin:0 0 4px">教材ライブラリ</h2><div class="muted tiny">資料を科目別に整理。学習画面からも開けます。</div></div>${button('＋ PDFを追加','add-pdf','')}</div><div class="module-list">${rows||'<div class="empty"><div class="emoji">📑</div><strong>まだ教材がありません</strong>PDFを追加すると、ここに表示されます。</div>'}</div>`}
+  function renderMaterials(){let rows=state.materials.map(m=>`<div class="material"><div class="material-icon">PDF</div><div class="material-text"><strong title="${escapeHTML(m.name)}">${escapeHTML(m.name)}</strong><small>${escapeHTML(byCourse(m.courseId).name)} · ${dateJa(m.created||ymd())} · ${Math.ceil(m.size/1024)} KB</small></div><div class="row-start">${button('AIで学ぶ','study-pdf:'+m.id)}${button('開く','pdf:'+m.id)}${button('削除','delpdf:'+m.id,'danger sm')}</div></div>`).join('');$('#page-materials').innerHTML=`<div class="notice">PDFはファイル選択のほか、コピーしたPDF・PDFリンク・文章の貼り付けでも追加できます。このブラウザの端末内に保存します。AI学習画面でPDFを表示し、指定ページをAIに解説してもらえます（AI接続設定が必要です）。機種変更前には元PDFも別途保管してください。</div><div class="toolbar"><div><h2 style="margin:0 0 4px">教材ライブラリ</h2><div class="muted tiny">資料を科目別に整理。学習画面からも開けます。</div></div>${button('＋ PDFを追加','add-pdf','')}</div><div class="module-list">${rows||'<div class="empty"><div class="emoji">📑</div><strong>まだ教材がありません</strong>PDFを追加すると、ここに表示されます。</div>'}</div>`}
   function lectureText(cid){return {
     math:['理解の入口：広義積分','積分区間が無限に伸びる場合や、被積分関数が途中で発散する場合は、定積分をそのまま計算できません。','そこで、区間の端を有限値に置いて積分し、その値の極限をとります。極限が有限なら収束、そうでなければ発散です。'],
     organic:['理解の入口：SN1とSN2','求核置換反応では、炭素に結合した脱離基が求核剤に置き換わります。','SN1は通常2段階で進み、中間体としてカルボカチオンを形成します。SN2は背面攻撃と脱離が同時に起こります。'],
@@ -336,7 +349,173 @@ window.bootStudyHub = function(){
     $('#questionChoiceFields').classList.toggle('hide',type.value!=='choice');
     $('#questionWrittenFields').classList.toggle('hide',type.value!=='written');
   }
-  function showAddPDF(){modal(`<div class="modal-head"><h2>PDFを追加</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div><form id="pdfForm"><div class="field"><label for="pdfCourse">科目</label>${courseSelector('pdfCourse',course)}</div><div class="field" style="margin-top:15px"><label for="pdfFile">PDFファイル（25MBまで）</label><input id="pdfFile" type="file" accept=".pdf,application/pdf" required></div><p class="info">PDFは端末内に保存されます。容量制限やプライベートモードによって保存できない場合があります。AI学習画面でPDFのページを表示し、解説・質問・問題作成ができます。</p><div class="modal-actions"><button type="button" class="btn secondary" data-action="close-modal">キャンセル</button><button type="submit" class="btn">保存する</button></div></form>`)}
+  // === PDF import: file, clipboard PDF, direct URL, or pasted text -> image PDF ===
+  let pdfAddMode='file',pdfPastedFile=null,pdfImportBusy=false;
+  function showAddPDF(){
+    pdfAddMode='file';pdfPastedFile=null;pdfImportBusy=false;
+    modal(`<div class="modal-head"><h2>PDF教材を追加</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div>
+      <form id="pdfForm"><div class="field"><label for="pdfCourse">教科</label>${courseSelector('pdfCourse',course)}</div>
+      <div class="pdf-source-tabs" aria-label="PDF追加方法"><button class="pdf-source-tab active" type="button" data-action="pdf-tab:file" aria-pressed="true">📁 ファイルから選ぶ</button><button class="pdf-source-tab" type="button" data-action="pdf-tab:paste" aria-pressed="false">📋 コピー＆ペースト</button></div>
+      <div id="pdfFilePane" class="field"><label for="pdfFile">PDFファイル（25MBまで）</label><input id="pdfFile" type="file" accept=".pdf,application/pdf"></div>
+      <div id="pdfPastePane" hidden>
+        <div class="field"><label for="pdfPasteName">教材名（任意）</label><input id="pdfPasteName" maxlength="100" placeholder="例：第3回 数学Ⅱの講義資料"></div>
+        <div class="field" style="margin-top:12px"><label for="pdfPasteText">コピーしたPDF・PDFリンク・講義文章を貼り付け</label><textarea id="pdfPasteText" class="pdf-paste-area" rows="5" placeholder="ここを長押し→『ペースト』。PDFのURL、または講義資料の文章をそのまま貼り付けられます。"></textarea></div>
+        <div class="row-start" style="margin-top:10px"><button class="btn secondary sm" type="button" data-action="pdf-read-clipboard">📋 クリップボードから読み込む</button><button class="btn ghost sm" type="button" data-action="pdf-clear-paste">クリア</button></div>
+        <div id="pdfPasteStatus" class="pdf-import-status" role="status" aria-live="polite">PDFをコピーした場合は上の欄で「ペースト」。直接URLや講義文章を貼り付けても登録できます。</div>
+        <details class="pdf-import-tips"><summary>貼り付けの注意点・対応形式</summary><div class="pdf-import-details"><b>PDFファイル：</b>SafariがクリップボードのPDFを渡せる場合に対応。利用できない場合は「ファイルから選ぶ」を使ってください。<br>
+        <b>PDFのリンク：</b>PDF本体にアクセスできるURLのみ。Google DriveやiCloudの共有ページは登録できないことがあります。リンク先が読み込みを許可していない場合も登録できません。<br>
+        <b>文章のコピペ：</b>文字を端末内で画像形式のPDFに変換して保存します（25,000文字まで）。この方式ではPDF内の文字を選択・検索できません。</div></details>
+      </div>
+      <p class="info" style="margin-top:14px">登録したPDFは、この端末・このアカウントに保存されます。PDF本体はバックアップJSONに含まれず、別端末と同期もしません。AIへの送信は、AI学習で質問したときだけです。</p>
+      <div class="modal-actions"><button type="button" class="btn secondary" data-action="close-modal">キャンセル</button><button type="submit" id="pdfSaveButton" class="btn">PDFを保存する</button></div></form>`);
+  }
+  function setPDFImportMode(mode){
+    pdfAddMode=mode==='paste'?'paste':'file';
+    const fp=$('#pdfFilePane'),pp=$('#pdfPastePane');if(!fp||!pp)return;
+    fp.hidden=pdfAddMode!=='file';pp.hidden=pdfAddMode!=='paste';
+    $$('.pdf-source-tab').forEach(b=>{const selected=b.dataset.action==='pdf-tab:'+pdfAddMode;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected))});
+    if(pdfAddMode==='paste')$('#pdfPasteText')?.focus();
+  }
+  function pdfPasteStatus(message,level='info'){
+    const target=$('#pdfPasteStatus');if(!target)return;
+    target.textContent=message;target.dataset.status=level;
+  }
+  function setPastedPDFFile(file){
+    pdfPastedFile=file;$('#pdfPasteText').value='';
+    if(!$('#pdfPasteName').value.trim())$('#pdfPasteName').value=file.name?.replace(/\.pdf$/i,'')||'コピーしたPDF';
+    pdfPasteStatus('PDFファイルを受け取りました：'+(file.name||'コピーしたPDF')+'（'+Math.ceil(file.size/1024)+' KB）。「PDFを保存する」を押してください。','success');
+  }
+  async function readPDFClipboard(){
+    if(pdfAddMode!=='paste')setPDFImportMode('paste');
+    try{
+      if(navigator.clipboard?.read){
+        const items=await navigator.clipboard.read();
+        for(const item of items){
+          const t=item.types.find(t=>t==='application/pdf'||t==='application/x-pdf');
+          if(t){setPastedPDFFile(new File([await item.getType(t)],'クリップボード.pdf',{type:'application/pdf'}));return}
+        }
+      }
+      if(navigator.clipboard?.readText){
+        const text=await navigator.clipboard.readText();
+        if(text.trim()){$('#pdfPasteText').value=text;pdfPastedFile=null;pdfPasteStatus(/^https?:\/\//i.test(text.trim())?'PDFのリンクを読み込みました。保存するとPDFの取得を試みます。':'文章を読み込みました。保存するとPDFに変換します。','success');return}
+      }
+      pdfPasteStatus('クリップボードからPDFを読み取れませんでした。入力欄を長押しして「ペースト」、または「ファイルから選ぶ」を使ってください。','error');
+    }catch(e){pdfPasteStatus('Safariがクリップボードの読み取りを許可しませんでした。入力欄を長押しして「ペースト」を試してください。','error')}
+  }
+  function pdfMagicOK(blob){return blob.slice(0,1024).text().then(x=>x.includes('%PDF-'))}
+  function namePDF(value,fallback='貼り付け教材'){
+    let name=String(value||fallback).trim().slice(0,105).replace(/[\\/:*?"<>|\u0000-\u001F]/g,'_');
+    if(!name)name=fallback;
+    return /\.pdf$/i.test(name)?name:name+'.pdf';
+  }
+  async function storeIncomingPDF(blob,displayName,courseId){
+    if(!blob||!blob.size)throw Error('空のPDFです');
+    if(blob.size>25*1024*1024)throw Error('25MBを超えるPDFは登録できません');
+    if(!await pdfMagicOK(blob))throw Error('PDF形式ではありません。共有ページではなくPDF本体を選んでください');
+    const id=uid();await dbPut(id,new Blob([blob],{type:'application/pdf'}));
+    state.materials.push({id,name:namePDF(displayName),courseId,created:ymd(),size:blob.size});
+    if(!save()){state.materials=state.materials.filter(m=>m.id!==id);await dbDel(id);throw Error('教材一覧を保存できませんでした。端末の空き容量を確認してください')}
+    closeModal();render();toast('PDF教材を追加しました');
+  }
+  async function fetchDirectPDF(url){
+    let parsed;try{parsed=new URL(url)}catch(e){throw Error('URLの形式が正しくありません')}
+    if(parsed.protocol!=='https:'&&parsed.protocol!=='http:')throw Error('https:// または http:// で始まるURLを入力してください');
+    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),20000);
+    try{
+      const response=await fetch(parsed.href,{mode:'cors',signal:controller.signal,credentials:'omit',redirect:'follow'});
+      if(!response.ok)throw Error('リンク先が応答しませんでした（HTTP '+response.status+'）');
+      const declared=Number(response.headers.get('content-length')||0);
+      if(declared>25*1024*1024)throw Error('リンク先のPDFが25MBを超えています');
+      if(!response.body){const b=await response.blob();if(b.size>25*1024*1024)throw Error('25MBを超えています');return b}
+      const reader=response.body.getReader(),chunks=[];let size=0;
+      while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>25*1024*1024){await reader.cancel();throw Error('25MBを超えるため読み込みを中止しました')}chunks.push(value)}
+      return new Blob(chunks,{type:'application/pdf'});
+    }catch(e){
+      if(e.name==='AbortError')throw Error('リンク先の読み込みがタイムアウトしました');
+      if(e instanceof TypeError)throw Error('リンク先が外部サイトからの読み込みを許可していません。PDFをファイルに保存してから登録してください');
+      throw e;
+    }finally{clearTimeout(timer)}
+  }
+  // No external library needed: Japanese text is drawn onto A4 canvas pages, then encoded as a JPEG-image PDF.
+  async function textToStudyPDF(text,title){
+    const W=1190,H=1684,M=88,FS=29,LH=44,START=184,END=H-94;
+    const ctx=document.createElement('canvas').getContext('2d');if(!ctx)throw Error('このブラウザではPDF変換ができません');
+    ctx.canvas.width=W;ctx.canvas.height=H;
+    const pages=[];let lines=[],used=START;
+    ctx.font=`${FS}px -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif`;
+    function wrap(raw){
+      const out=[];if(raw===''){out.push('');return out}
+      let line='';
+      for(const ch of Array.from(raw.replace(/\t/g,'    '))){
+        if(ctx.measureText(line+ch).width>W-M*2&&line){out.push(line);line=ch}else line+=ch;
+      }
+      out.push(line);return out;
+    }
+    for(const raw of text.replace(/\r\n?/g,'\n').split('\n')){
+      for(const line of wrap(raw)){
+        if(used+LH>END){pages.push(lines);lines=[];used=START}
+        lines.push(line);used+=LH;
+      }
+    }
+    if(lines.length||!pages.length)pages.push(lines);
+    const jpgs=[];for(let i=0;i<pages.length;i++){
+      ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#153f3a';ctx.font='bold 35px -apple-system, "Hiragino Kaku Gothic ProN", sans-serif';
+      ctx.fillText(title.slice(0,32),M,86,W-M*2);
+      ctx.strokeStyle='#c3dcd3';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(M,119);ctx.lineTo(W-M,119);ctx.stroke();
+      ctx.fillStyle='#263c40';ctx.font=`${FS}px -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif`;
+      for(let k=0;k<pages[i].length;k++)ctx.fillText(pages[i][k],M,START+k*LH);
+      ctx.fillStyle='#7a9490';ctx.font='22px sans-serif';ctx.textAlign='right';ctx.fillText(`${i+1} / ${pages.length}`,W-M,H-45);ctx.textAlign='left';
+      const b64=ctx.canvas.toDataURL('image/jpeg',.78).split(',')[1];const binary=atob(b64),bytes=new Uint8Array(binary.length);for(let j=0;j<binary.length;j++)bytes[j]=binary.charCodeAt(j);jpgs.push(bytes);
+      if(i%3===2)await new Promise(resolve=>setTimeout(resolve,0));
+    }
+    const enc=new TextEncoder(),parts=[];let offset=0;const xref=[0];
+    const put=x=>{const b=typeof x==='string'?enc.encode(x):x;parts.push(b);offset+=b.length};
+    const obj=(n,body)=>{xref[n]=offset;put(`${n} 0 obj\n`);for(const p of body)put(p);put('\nendobj\n')};
+    put('%PDF-1.4\n%Study Hub PDF\n');
+    obj(1,['<< /Type /Catalog /Pages 2 0 R >>']);
+    const kids=jpgs.map((_,i)=>`${3+3*i} 0 R`).join(' ');
+    obj(2,[`<< /Type /Pages /Kids [ ${kids} ] /Count ${jpgs.length} >>`]);
+    for(let i=0;i<jpgs.length;i++){
+      const pg=3+3*i,im=pg+1,stream=pg+2,img=jpgs[i];
+      obj(pg,[`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${stream} 0 R >>`]);
+      obj(im,[`<< /Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${img.length} >>\nstream\n`,img,'\nendstream']);
+      const content='q\n595 0 0 842 0 0 cm\n/Im0 Do\nQ\n';
+      obj(stream,[`<< /Length ${enc.encode(content).length} >>\nstream\n`,content,'endstream']);
+    }
+    const at=offset;put(`xref\n0 ${xref.length}\n0000000000 65535 f \n`);
+    for(let i=1;i<xref.length;i++)put(String(xref[i]).padStart(10,'0')+' 00000 n \n');
+    put(`trailer\n<< /Size ${xref.length} /Root 1 0 R >>\nstartxref\n${at}\n%%EOF\n`);
+    return new Blob(parts,{type:'application/pdf'});
+  }
+  async function submitPDF(){
+    if(pdfImportBusy)return;
+    const cid=$('#pdfCourse').value;let file=null,name='';
+    pdfImportBusy=true;const saveBtn=$('#pdfSaveButton');if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='読み込み・保存中…'}
+    try{
+      if(pdfAddMode==='file'){
+        file=$('#pdfFile')?.files?.[0];if(!file)throw Error('PDFファイルを選択してください');name=file.name;
+      }else if(pdfPastedFile){
+        file=pdfPastedFile;name=$('#pdfPasteName').value.trim()||file.name||'コピーしたPDF.pdf';
+      }else{
+        const content=$('#pdfPasteText').value.trim(),named=$('#pdfPasteName').value.trim();
+        if(!content)throw Error('PDF・URL・講義文章を貼り付けてください');
+        if(/^https?:\/\//i.test(content)){
+          if(/\s/.test(content))throw Error('PDFのURLを1つだけ貼り付けてください');
+          pdfPasteStatus('PDFのリンクを取得しています…');file=await fetchDirectPDF(content);
+          let fname='';try{fname=decodeURIComponent(new URL(content).pathname.split('/').pop()||'')}catch(e){}
+          name=named||fname||'リンクから登録';
+        }else{
+          if(content.length>25000)throw Error('文章は25,000文字までです。分けて登録してください');
+          pdfPasteStatus('貼り付けた文章からPDFを作成しています…');
+          name=named||'貼り付けた講義メモ';file=await textToStudyPDF(content,name);
+        }
+      }
+      await storeIncomingPDF(file,name,cid);
+    }catch(e){const msg=e?.message||'PDFの追加に失敗しました';pdfPasteStatus(msg,'error');toast(msg)}
+    finally{pdfImportBusy=false;if(saveBtn?.isConnected){saveBtn.disabled=false;saveBtn.textContent='PDFを保存する'}}
+  }
+
   function showAddPlan(){modal(`<div class="modal-head"><h2>学習計画を追加</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div><form id="planForm"><div class="form-grid"><div class="field full"><label for="planTitle">やること</label><input id="planTitle" required maxlength="150" placeholder="例：広義積分の問題を10問解く"></div><div class="field"><label for="planCourse">科目</label>${courseSelector('planCourse',course)}</div><div class="field"><label for="planDate">期限</label><input id="planDate" type="date" required value="${ymd()}"></div></div><div class="modal-actions"><button type="button" class="btn secondary" data-action="close-modal">キャンセル</button><button type="submit" class="btn">追加する</button></div></form>`)}
   function showBackup(){modal(`<div class="modal-head"><h2>バックアップと復元</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div><p class="info">登録した問題・正答履歴・ノート・計画を保存できます。<b>PDFファイル本体は含まれません。</b> 復元すると学習データはバックアップの状態に置き換わります。</p><div class="row-start">${button('バックアップを保存','export','')}${button('バックアップを読み込む','import')}</div><div class="hr"></div><p class="info">端末を替えたり、サイトのデータを削除したりすると記録が失われる場合があります。大切な学習データは定期的にバックアップしてください。</p>`)}
   function exportData(){const copy=JSON.parse(JSON.stringify(state));copy.materials=state.materials.map(m=>({...m,pdfNotIncluded:true}));const blob=new Blob([JSON.stringify({...copy,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='study-hub-backup-'+ymd()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('学習データのバックアップを作成しました（PDF本体を除く）')}
@@ -346,12 +525,20 @@ window.bootStudyHub = function(){
   const dbPut=(k,v)=>dbAction('readwrite',s=>s.put(v,k));const dbGet=k=>dbAction('readonly',s=>s.get(k));const dbDel=k=>dbAction('readwrite',s=>s.delete(k));
   async function openPDF(id){const tab=window.open('about:blank','_blank');try{const blob=await dbGet(id);if(!blob){if(tab)tab.close();toast('PDF本体が見つかりません。登録し直してください。');return}const url=URL.createObjectURL(blob);if(tab){tab.location.href=url;setTimeout(()=>URL.revokeObjectURL(url),600000)}else{const a=document.createElement('a');a.href=url;a.download=(state.materials.find(m=>m.id===id)||{}).name||'material.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);toast('ポップアップが開けないためPDFの保存を試みました')}}catch(e){if(tab)tab.close();toast('PDFを開けませんでした。ブラウザの保存設定を確認してください。')}}
   async function deletePDF(id){if(!confirm('このPDFを削除しますか？'))return;try{await dbDel(id)}catch(e){}state.materials=state.materials.filter(m=>m.id!==id);save();render();toast('PDFを削除しました')}
-  async function submitPDF(){const file=$('#pdfFile').files[0];if(!file){toast('PDFを選択してください');return}if(file.size>25*1024*1024){toast('25MBを超えています');return}if(!file.name.toLowerCase().endsWith('.pdf')&&file.type!=='application/pdf'){toast('PDFを選択してください');return}const id=uid();try{await dbPut(id,file);state.materials.push({id,name:file.name,courseId:$('#pdfCourse').value,created:ymd(),size:file.size});save();closeModal();render();toast('PDFを追加しました')}catch(e){toast('PDFを保存できません。ストレージ容量やブラウザ設定を確認してください。')}}
   function startQuiz(mode='normal',filter='all'){quizMode=mode;quizFilter=filter;qid=null;navigate('quiz')}
   document.addEventListener('click',async e=>{const navBtn=e.target.closest('[data-nav]');if(navBtn){navigate(navBtn.dataset.nav);return}const choice=e.target.closest('[data-choice]');if(choice&&!graded){chosen=Number(choice.dataset.choice);renderQuiz();return}const aiAct=e.target.closest('[data-ai]');if(aiAct){handleAIAction(aiAct);return}const act=e.target.closest('[data-action]')?.dataset.action;if(!act)return;
-    if(act.startsWith('nav-'))return navigate(act.slice(4));if(act.startsWith('study-pdf:')){aiPdfId=act.slice(10);aiPdfDoc=null;aiChat=[];navigate('ai');return;}if(act==='start-quiz')return startQuiz();if(act==='start-course-quiz')return startQuiz('normal',course);if(act==='start-review')return startQuiz('review','all');if(act==='next-quiz'){nextQuestion();renderQuiz();return}if(act==='grade-quiz'){grade();return}if(act.startsWith('mark-written:')){markWritten(act.endsWith('correct'));return}if(act==='add-question')return showAddQuestion();if(act==='new-thread')return threadNewModal(threadCourseFilter==='all'?(courses[0]?.id||'other'):threadCourseFilter);if(act==='new-subject')return threadAddSubjectModal();if(act==='manage-subjects')return threadManageSubjectsModal();if(act==='add-pdf')return showAddPDF();if(act==='add-plan')return showAddPlan();if(act==='close-modal')return closeModal();if(act==='delete-lecture-memo')return deleteLectureMemo();if(act==='restore-lecture-memo')return restoreLectureMemo();if(act==='delete-note')return deleteOwnNote();if(act==='save-note'){state.notes[course]=$('#noteText').value;save();$('#noteStatus').textContent='保存しました ✓';toast('ノートを保存しました');return}if(act==='export')return exportData();if(act==='import')return importData();if(act==='reset'){if(confirm('すべての学習記録・ノート・問題・計画を初期化しますか？ PDFファイルの削除は別途必要です。')){state={...makeSeed(),materials:state.materials,customCourses:state.customCourses,hiddenCourses:state.hiddenCourses,deletedLectureMemos:[]};syncCustomCourses();migrateWrittenMath();save();qid=null;closeModal();navigate('home');toast('学習データを初期化しました')}return}if(act.startsWith('pdf:'))return openPDF(act.slice(4));if(act.startsWith('delpdf:'))return deletePDF(act.slice(7));if(act.startsWith('delplan:')){if(confirm('この計画を削除しますか？')){state.plans=state.plans.filter(x=>x.id!==act.slice(8));save();render()}return}
+    if(act.startsWith('nav-'))return navigate(act.slice(4));if(act.startsWith('study-pdf:')){aiPdfId=act.slice(10);aiPdfDoc=null;aiChat=[];navigate('ai');return;}if(act==='start-quiz')return startQuiz();if(act==='start-course-quiz')return startQuiz('normal',course);if(act==='start-review')return startQuiz('review','all');if(act==='next-quiz'){nextQuestion();renderQuiz();return}if(act==='grade-quiz'){grade();return}if(act.startsWith('mark-written:')){markWritten(act.endsWith('correct'));return}if(act==='add-question')return showAddQuestion();if(act==='new-thread')return threadNewModal(threadCourseFilter==='all'?(courses[0]?.id||'other'):threadCourseFilter);if(act==='new-subject')return threadAddSubjectModal();if(act==='manage-subjects')return threadManageSubjectsModal();if(act==='add-pdf')return showAddPDF();if(act.startsWith('pdf-tab:'))return setPDFImportMode(act.split(':')[1]);if(act==='pdf-read-clipboard')return readPDFClipboard();if(act==='pdf-clear-paste'){pdfPastedFile=null;$('#pdfPasteText').value='';$('#pdfPasteName').value='';pdfPasteStatus('貼り付け欄をクリアしました。');return}if(act==='add-plan')return showAddPlan();if(act==='close-modal')return closeModal();if(act==='delete-lecture-memo')return deleteLectureMemo();if(act==='restore-lecture-memo')return restoreLectureMemo();if(act==='delete-note')return deleteOwnNote();if(act==='save-note'){state.notes[course]=$('#noteText').value;save();$('#noteStatus').textContent='保存しました ✓';toast('ノートを保存しました');return}if(act==='export')return exportData();if(act==='import')return importData();if(act==='reset'){if(confirm('すべての学習記録・ノート・問題・計画を初期化しますか？ PDFファイルの削除は別途必要です。')){state={...makeSeed(),materials:state.materials,customCourses:state.customCourses,hiddenCourses:state.hiddenCourses,deletedLectureMemos:[]};syncCustomCourses();migrateWrittenMath();save();qid=null;closeModal();navigate('home');toast('学習データを初期化しました')}return}if(act.startsWith('pdf:'))return openPDF(act.slice(4));if(act.startsWith('delpdf:'))return deletePDF(act.slice(7));if(act.startsWith('delplan:')){if(confirm('この計画を削除しますか？')){state.plans=state.plans.filter(x=>x.id!==act.slice(8));save();render()}return}
   });
   document.addEventListener('change',e=>{const el=e.target;if(el.id==='cqCourse'||el.id==='cqType'){updateQuestionFields();return}else if(el.id==='aiMaterialPicker'){aiPdfId=el.value;aiPdfDoc=null;aiChat=[];renderAI();return}else if(el.id==='learnCourse'){course=el.value;renderLearn()}else if(el.id==='quizCourse'){quizFilter=el.value;qid=null;renderQuiz()}else if(el.id==='quizMode'){quizMode=el.value;qid=null;renderQuiz()}else if(el.dataset.planCheck){const p=state.plans.find(x=>x.id===el.dataset.planCheck);if(p){p.done=el.checked;save();render()}}});
+  document.addEventListener('paste',e=>{
+    if(e.target.id!=='pdfPasteText')return;
+    const items=[...(e.clipboardData?.items||[])];
+    const fileItem=items.find(it=>{if(it.kind!=='file')return false;const f=it.getAsFile();return it.type==='application/pdf'||it.type==='application/x-pdf'||/\.pdf$/i.test(f?.name||'')});
+    if(fileItem){const f=fileItem.getAsFile();if(f){e.preventDefault();setPastedPDFFile(f);return}}
+    pdfPastedFile=null;
+    setTimeout(()=>{const val=$('#pdfPasteText')?.value.trim()||'';if(val)pdfPasteStatus(/^https?:\/\//i.test(val)?'PDFリンクを検出しました。保存時にリンク先のPDFを取得します。':'文章を検出しました。保存時に画像形式のPDFに変換します。','success')},0);
+  });
+  document.addEventListener('input',e=>{if(e.target.id==='pdfPasteText'){pdfPastedFile=null;const v=e.target.value.trim();if(v)pdfPasteStatus(/^https?:\/\//i.test(v)?'PDFリンクが入力されています。':'講義文章が入力されています。','success')}});
   document.addEventListener('submit',e=>{if(e.target.id==='aiChatForm'){e.preventDefault();sendAIChat();return}else if(e.target.id==='questionForm'){
     e.preventDefault();const cid=$('#cqCourse').value;const type=cid==='math'?'written':$('#cqType').value;
     const q={id:uid(),courseId:cid,topic:$('#cqTopic').value.trim(),text:$('#cqText').value.trim(),explanation:$('#cqWhy').value.trim(),reviewStep:0,nextDue:null,seen:false,type};
