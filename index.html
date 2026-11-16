@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Study Hub">
   <meta name="description" content="アカウントごとに会話・教材・復習履歴を分けて学習できます。">
-  <title>Study Hub 5.5 — 共有リンクで会話を取り込む</title>
+  <title>Study Hub 5.6 — 共有リンクだけで会話を保存</title>
   <style>
     :root {--bg:#f3f6f5;--paper:#fff;--ink:#172c36;--muted:#617781;--line:#e2eae7;--primary:#197c74;--primary-weak:#e6f5ef;--nav:#14303a;--amber:#e5ac51;--red:#c75449;--shadow:0 8px 30px rgba(15,39,46,.045)}
     *{box-sizing:border-box} html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
@@ -137,6 +137,15 @@ body.profile-unlocked #profileGate {display:none!important}
 .pdf-import-status[data-status="success"]{background:#e7f7ee;color:#196849}
 .pdf-import-tips{line-height:1.8;font-size:12px;color:#647b76;margin:12px 0 0}
 .pdf-import-tips b{color:#385d56}.pdf-import-tips summary{cursor:pointer;color:#206d61;font-weight:750;padding:6px 0}.pdf-import-tips .pdf-import-details{padding:6px 4px 0}
+
+/* 5.6: URL-only, one-step import */
+.share-quick{display:flex;gap:9px;margin-top:14px;align-items:stretch;flex-wrap:wrap}
+.share-quick input{flex:1 1 340px;min-width:160px;min-height:49px;background:#fff;border:1px solid #c7ded5;border-radius:12px;padding:10px 14px;font:inherit}
+.share-quick button{min-height:49px}
+.share-quick-status{white-space:pre-wrap;line-height:1.7;color:#3e6960;font-size:12px;margin-top:10px;overflow-wrap:anywhere}
+.share-quick-status.error{color:#a4413b}
+.share-linkonly{border:1px solid #ead9b4;background:#fffbf2;border-radius:12px;padding:12px;margin-top:12px;font-size:12px;color:#75582b;line-height:1.8}
+.share-linkonly .btn{margin-top:8px}
 </style>
 </head>
 <body>
@@ -258,7 +267,7 @@ window.bootStudyHub = function(){
     <div class="metrics"><div class="metric card"><div class="label">♻ 復習待ち</div><div class="value">${n}<small>問</small></div><div class="sub">${n?'今日できる復習があります':'いまは復習待ちはありません'}</div></div><div class="metric card"><div class="label">✓ 今日の回答</div><div class="value">${count}<small>問</small></div><div class="sub">正誤を記録します</div></div><div class="metric card"><div class="label">◷ 今週の学習</div><div class="value">${daysPast(7)}<small>分</small></div><div class="sub">画面を開いた時間の概算</div></div></div>
     <div class="cols"><div class="card"><div class="row"><h2 style="margin:0">科目ごとの学習状況</h2>${button('教科・会話へ →','nav-threads')}</div><div style="margin-top:14px">${courseRows()}</div></div>
     <div class="stack"><div class="card"><div class="row"><h2 style="margin:0">今日のおすすめ</h2><span class="tag">STEP 01</span></div><div style="margin-top:16px"><div style="font-size:17px;font-weight:800">${n?'復習から始めよう':'新しい問題に挑戦しよう'}</div><p class="muted tiny">${n?`復習予定の${n}問を確認しましょう。`:'解いた問題が記録され、復習予定が作られます。'}</p>${button(n?'復習する →':'演習へ →',n?'nav-review':'nav-quiz','')}</div></div><div class="card"><div class="row"><h2 style="margin:0">直近の学習計画</h2>${button('計画を追加','add-plan')}</div>${plansHTML(3)}</div></div></div>`}
-  function renderMaterials(){let rows=state.materials.map(m=>`<div class="material"><div class="material-icon">PDF</div><div class="material-text"><strong title="${escapeHTML(m.name)}">${escapeHTML(m.name)}</strong><small>${escapeHTML(byCourse(m.courseId).name)} · ${dateJa(m.created||ymd())} · ${Math.ceil(m.size/1024)} KB</small></div><div class="row-start">${button('AIで学ぶ','study-pdf:'+m.id)}${button('開く','pdf:'+m.id)}${button('削除','delpdf:'+m.id,'danger sm')}</div></div>`).join('');$('#page-materials').innerHTML=`<div class="notice">ここはPDF資料の保存場所です。<b>ChatGPTの会話はPDFに変換せず、そのまま「教科・会話」に保存できます。</b> PDFは端末内に保存し、AI学習で使用できます（AI接続は別途必要）。</div><div class="conversation-import-banner"><div><h3>💬 勉強した会話を保存したい？</h3><p>ChatGPTの共有リンクから質問と回答を読み込み、教科別に保存できます。PDF化は不要です。</p></div><button class="btn" data-action="share-conversation">🔗 共有リンクから取り込む</button><button class="btn secondary" data-action="paste-conversation">手動貼り付け</button></div><div class="toolbar"><div><h2 style="margin:0 0 4px">教材ライブラリ</h2><div class="muted tiny">資料を科目別に整理。学習画面からも開けます。</div></div>${button('＋ PDFを追加','add-pdf','')}</div><div class="module-list">${rows||'<div class="empty"><div class="emoji">📑</div><strong>まだ教材がありません</strong>PDFを追加すると、ここに表示されます。</div>'}</div>`}
+  function renderMaterials(){let rows=state.materials.map(m=>`<div class="material"><div class="material-icon">PDF</div><div class="material-text"><strong title="${escapeHTML(m.name)}">${escapeHTML(m.name)}</strong><small>${escapeHTML(byCourse(m.courseId).name)} · ${dateJa(m.created||ymd())} · ${Math.ceil(m.size/1024)} KB</small></div><div class="row-start">${button('AIで学ぶ','study-pdf:'+m.id)}${button('開く','pdf:'+m.id)}${button('削除','delpdf:'+m.id,'danger sm')}</div></div>`).join('');$('#page-materials').innerHTML=`<div class="notice">ここはPDF資料の保存場所です。<b>ChatGPTの会話はPDFに変換せず、そのまま「教科・会話」に保存できます。</b> PDFは端末内に保存し、AI学習で使用できます（AI接続は別途必要）。</div><div class="conversation-import-banner"><div><h3>💬 勉強した会話を保存したい？</h3><p>ChatGPTの共有リンクを貼るだけで質問と回答を取り込めます。教科は自動で仮分類されます。PDF化は不要です。</p></div><button class="btn" data-action="share-conversation">🔗 共有リンクから取り込む</button><button class="btn secondary" data-action="paste-conversation">手動貼り付け</button></div><div class="toolbar"><div><h2 style="margin:0 0 4px">教材ライブラリ</h2><div class="muted tiny">資料を科目別に整理。学習画面からも開けます。</div></div>${button('＋ PDFを追加','add-pdf','')}</div><div class="module-list">${rows||'<div class="empty"><div class="emoji">📑</div><strong>まだ教材がありません</strong>PDFを追加すると、ここに表示されます。</div>'}</div>`}
   function lectureText(cid){return {
     math:['理解の入口：広義積分','積分区間が無限に伸びる場合や、被積分関数が途中で発散する場合は、定積分をそのまま計算できません。','そこで、区間の端を有限値に置いて積分し、その値の極限をとります。極限が有限なら収束、そうでなければ発散です。'],
     organic:['理解の入口：SN1とSN2','求核置換反応では、炭素に結合した脱離基が求核剤に置き換わります。','SN1は通常2段階で進み、中間体としてカルボカチオンを形成します。SN2は背面攻撃と脱離が同時に起こります。'],
@@ -823,8 +832,8 @@ window.bootStudyHub = function(){
   }
   function renderThreads(){
     $('#page-threads').innerHTML=`
-      <div class="thread-hero"><h2>ChatGPTで勉強した会話を、そのまま保存。</h2><p>共有リンクから会話を取り込むか、全文を貼り付けると、質問と回答を会話形式で残せます。教科別に保存・検索し、復習問題にもつなげられます。<b>API課金なし</b>。</p><div style="margin-top:13px" class="row-start"><button class="btn" data-thread-action="share-import">🔗 共有リンクから取り込む</button><button class="btn secondary" data-thread-action="paste">📋 会話全文を貼り付ける</button></div></div>
-      <div class="thread-privacy">🔒 <b>保存した会話はこの端末内に保管されます。</b> 共有リンクの自動取得を選んだ場合だけ、URLを自分のCloudflare Workerに送ってChatGPTの公開ページを取得します。共有リンクはリンクを知る人が閲覧できるため、公開する内容に注意してください。GitHubには会話やバックアップをアップロードしないでください。</div>
+      <div class="thread-hero"><h2>ChatGPTの共有リンクを貼るだけ。</h2><p>会話のURLを1つ入力して「取り込んで保存」を押すと、取得できた質問と回答をそのまま保存します。タイトルなどから教科を仮分類し、後から変更できます。<b>AI APIの利用料金はかかりません。</b></p><form id="threadQuickShareForm" class="share-quick"><input type="url" id="threadQuickShareUrl" required inputmode="url" autocapitalize="off" spellcheck="false" autocomplete="off" aria-label="ChatGPTの共有リンク" placeholder="https://chatgpt.com/share/..."><button class="btn" id="threadQuickShareBtn" type="submit">🔗 取り込んで保存</button></form><div id="threadQuickShareStatus" class="share-quick-status" role="status" aria-live="polite">初回だけCloudflareの学習用パスワードの設定が必要な場合があります。共有ページが読み取れないときは本文を保存しません。</div><button type="button" id="threadQuickLinkOnly" class="btn secondary sm hide" data-thread-action="save-link-only">🔗 本文なしでリンクだけ保存</button></div>
+      <div class="thread-privacy">🔒 <b>保存した会話本文はこの端末内に保管されます。</b> 共有リンクの自動取得を選んだ場合だけ、URLを自分のCloudflare Workerに送ってChatGPTの公開ページを取得します。共有リンクはリンクを知る人が閲覧できるため、公開する内容に注意してください。GitHubには会話やバックアップをアップロードしないでください。</div>
       ${subjectCards()}
       <div class="section-head"><h2>会話一覧</h2>${button('＋ 新しい会話','new-thread','')}</div>
       <div class="thread-tools"><button class="btn secondary" data-thread-action="share-import">🔗 共有URLから取り込む</button><button class="btn secondary" data-thread-action="import">📥 ChatGPT履歴を読み込む</button><button class="btn secondary" data-thread-action="paste">📋 会話を貼り付けて保存</button><button class="btn secondary" data-thread-action="export">会話・ノートをバックアップ</button><button class="btn secondary" data-thread-action="restore">会話・ノートを復元</button></div>
@@ -840,14 +849,14 @@ window.bootStudyHub = function(){
   function threadShowCurrent(){const root=$('#threadDetail');const chat=threadCurrent;if(!root||!chat)return;
     const notes=chat.digest||'';
     root.innerHTML=`<h2 class="thread-selected-title">${escapeHTML(chat.title)}</h2>
-      <div class="thread-mini"><span class="tiny muted">教科</span><select class="ui" id="threadCourseEdit" style="width:auto">${threadOptions(chat.course)}</select><button class="btn secondary sm" data-thread-action="rename-thread">タイトル変更</button><button class="btn secondary sm" data-thread-action="export-text">会話全文をTXT保存</button><span class="tiny muted">${chat.messages.length}件の発言 ${chat.truncated?'（長い会話のため途中まで保存）':''}</span></div>
+      <div class="thread-mini"><span class="tiny muted">教科</span><select class="ui" id="threadCourseEdit" style="width:auto">${threadOptions(chat.course)}</select><button class="btn secondary sm" data-thread-action="rename-thread">タイトル変更</button><button class="btn secondary sm" data-thread-action="export-text">会話全文をTXT保存</button><span class="tiny muted">${chat.linkOnly?'リンクのみ・本文未取得':chat.messages.length+'件の発言'} ${chat.truncated?'（長い会話のため途中まで保存）':''}</span></div>
       ${chat.sourceUrl&&/^https:\/\//i.test(chat.sourceUrl)?`<a class="thread-source-link" href="${escapeHTML(chat.sourceUrl)}" target="_blank" rel="noopener noreferrer">元の会話リンクを開く ↗</a>`:''}
       <h2 style="margin:19px 0 10px">会話のメモ・要点</h2><p class="info">重要な公式や、つまずいた理由などを残そう。</p>
       <textarea class="ui thread-digest" id="threadDigest" placeholder="学んだことを3〜5行にまとめよう…">${escapeHTML(notes)}</textarea>
       <div class="thread-mini"><button class="btn" data-thread-action="save-digest">ノートを保存</button><button class="btn secondary" data-thread-action="extract">重要箇所の抜粋候補</button><button class="btn secondary" data-thread-action="make-question">この会話から復習問題を作る</button><button class="btn secondary" data-thread-action="copy-prompt">ChatGPT用まとめ依頼文をコピー</button></div>
       <p class="info">「復習問題を作る」は会話のタイトルとノートから問題の下書きを作ります。正しい問題・模範解答になっているか必ず編集して保存してください。</p>
       <div class="row" style="margin:20px 0 12px;flex-wrap:wrap"><h2 style="margin:0">会話の内容</h2><button class="btn secondary sm" data-thread-action="delete">この会話を削除</button></div>
-      <div class="thread-transcript" id="threadTranscript">${chat.messages.length?chat.messages.map((m,i)=>`<div class="thread-message ${m.role==='user'?'user':'assistant'}"><b>${m.role==='user'?(chat.sourceText&&!chat.messages.some(x=>x.role==='assistant')?'貼り付けた会話・メモ':'自分の質問・メモ'):'ChatGPTなどの回答'} · ${i+1}</b>${escapeHTML(m.text)}</div>`).join(''):'<div class="thread-placeholder">この会話はまだ空です。下の入力欄から最初のメッセージを保存してね。</div>'}</div>
+      <div class="thread-transcript" id="threadTranscript">${chat.messages.length?chat.messages.map((m,i)=>`<div class="thread-message ${m.role==='user'?'user':'assistant'}"><b>${m.role==='user'?(chat.sourceText&&!chat.messages.some(x=>x.role==='assistant')?'貼り付けた会話・メモ':'自分の質問・メモ'):'ChatGPTなどの回答'} · ${i+1}</b>${escapeHTML(m.text)}</div>`).join(''):'<div class="thread-placeholder">'+(chat.linkOnly?'共有リンクだけを保存しています。質問と回答の本文は取得できていません。':'この会話はまだ空です。下の入力欄から最初のメッセージを保存してね。')+'</div>'}</div>
       ${chat.sourceText?`<details class="thread-paste-help"><summary>貼り付けた元の全文を確認する</summary><div style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto;margin-top:12px">${escapeHTML(chat.sourceText)}</div></details>`:''}
       <form id="threadMessageForm" class="thread-compose"><div class="field"><label for="threadMsgRole">内容の種類</label><select class="ui" id="threadMsgRole"><option value="user">自分の質問・メモ</option><option value="assistant">ChatGPTなどからコピーした解説</option></select></div><div class="field"><label for="threadMsgText">新しい発言・学習内容</label><textarea class="ui" id="threadMsgText" rows="4" maxlength="25000" required placeholder="疑問、気づき、解説を入力して保存…"></textarea></div><div class="row-start"><button class="btn" type="submit">この会話に追加する</button><span class="tiny muted">AIの自動返答ではなく、学習記録として保存します。</span></div></form>`;
   }
@@ -996,75 +1005,97 @@ window.bootStudyHub = function(){
       <div class="modal-actions"><button type="button" class="btn secondary" data-action="close-modal">キャンセル</button><button class="btn" type="submit">💾 会話として保存する</button></div></form>`);
   }
 
-  // v5.5: link -> Cloudflare Worker -> public ChatGPT share HTML -> question/answer.
-  // Uses existing Worker credentials, and never invokes OpenAI paid models.
-  let shareImportPending=null;
-  function threadShareModal(){
-    shareImportPending=null;
-    const preferred=(threadCourseFilter!=='all'&&allCourses().some(x=>x.id===threadCourseFilter))?threadCourseFilter:'math';
-    const defaultWorker=aiEndpoint||'https://study-hub-ai.bebidora33.workers.dev';
-    modal(`<div class="modal-head"><h2>🔗 ChatGPT共有リンクから取り込む</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div>
-      <div class="info" style="margin-bottom:14px">ChatGPTで「共有」→「リンクをコピー」。下に貼り付けると、<b>質問と回答を自動取得</b>して保存できます。OpenAI APIの利用料金はかかりません。</div>
-      <form id="threadShareForm">
-      <div class="field"><label for="threadShareUrl">ChatGPTの共有URL</label><input id="threadShareUrl" type="url" class="ui" required inputmode="url" autocapitalize="off" spellcheck="false" placeholder="https://chatgpt.com/share/xxxxxxxx-..."></div>
-      <div class="field" style="margin-top:11px"><label for="threadShareCourse">保存先の教科</label><select id="threadShareCourse" class="ui">${threadOptions(preferred)}</select></div>
-      <details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">Cloudflareの接続設定</summary>
-      <div class="field" style="margin-top:10px"><label for="threadShareWorker">Worker URL</label><input class="ui" id="threadShareWorker" value="${escapeHTML(defaultWorker)}" inputmode="url" autocapitalize="off" spellcheck="false"></div>
-      <div class="field" style="margin-top:10px"><label for="threadSharePassword">学習アプリ用パスワード</label><input class="ui" id="threadSharePassword" type="password" autocomplete="off" placeholder="${aiPassword?'このタブでは設定済み（再入力不要）':'Cloudflareの STUDY_PASSWORD'}"></div>
-      <p class="info">Workerのコードもこの版の worker.js に更新してください。OpenAI APIキーは入力しないでください。</p></details>
-      <div class="thread-paste-status" id="threadShareStatus" role="status" aria-live="polite">まだ取得していません。取得後にタイトルと発言数を確認してから保存します。</div>
-      <div id="threadSharePreview" class="hide" style="margin-top:14px"><div class="field"><label for="threadShareTitle">保存する会話のタイトル</label><input id="threadShareTitle" class="ui" maxlength="160"></div><div id="threadShareSamples" class="thread-paste-help"></div></div>
-      <div class="thread-paste-help">共有リンクは公開用のスナップショットです。作成後に追加された発言は自動同期されません。共有範囲が1回答だけの場合はその回答だけが保存されます。取得に失敗した場合は従来の手動貼り付けか、履歴JSONの取り込みが使えます。</div>
-      <div class="modal-actions" style="flex-wrap:wrap"><button type="button" class="btn secondary" data-action="close-modal">キャンセル</button><button type="button" class="btn secondary" data-thread-action="paste">手動貼り付けへ</button><button id="threadShareFetch" type="submit" class="btn">🔍 会話を取得</button><button id="threadShareSave" type="button" class="btn hide" data-thread-action="save-share">💾 教科に保存</button></div>
-      </form>`);
+  // v5.6: a share URL is the only required input once the one-time Worker password is configured.
+  // Private study notes stay in this browser. No paid OpenAI call is involved in this flow.
+  const defaultShareWorker='https://study-hub-ai.bebidora33.workers.dev';
+  let shareLastFailedUrl='';
+  function shareNormalizeURL(raw){
+    const u=new URL(String(raw||'').trim());
+    if(u.protocol!=='https:'||!['chatgpt.com','chat.openai.com'].includes(u.hostname)||u.username||u.password||u.port||!/^\/share\/[A-Za-z0-9-]{20,90}\/?$/.test(u.pathname))throw Error('ChatGPTの https://chatgpt.com/share/ で始まる共有リンクを入力してください');
+    return 'https://chatgpt.com/share/'+u.pathname.split('/')[2];
   }
-  async function threadFetchShare(e){
-    e.preventDefault();shareImportPending=null;
-    const status=$('#threadShareStatus'),preview=$('#threadSharePreview'),saveBtn=$('#threadShareSave'),button=$('#threadShareFetch');
-    saveBtn?.classList.add('hide');preview?.classList.add('hide');
-    let link,worker,pwd;
+  function shareChatId(url){return 'share-'+url.split('/').pop()}
+  function shareStatus(msg,error=false){
+    const target=$('#threadQuickShareStatus');if(target){target.textContent=msg;target.classList.toggle('error',error)}
+    const modalStatus=$('#threadShareStatus');if(modalStatus)modalStatus.textContent=msg;
+  }
+  function shareSetBusy(busy){
+    for(const id of ['threadQuickShareBtn','threadShareFetch']){const b=$('#'+id);if(b){b.disabled=busy;b.textContent=busy?'会話を取得中…':id==='threadQuickShareBtn'?'🔗 取り込んで保存':'🔗 取り込んで保存'}}
+  }
+  function threadShareModal(initialUrl=''){
+    if(typeof initialUrl!=='string')initialUrl='';
+    const configured=!!aiPassword;
+    modal(`<div class="modal-head"><h2>🔗 共有リンクだけで保存</h2><button class="iconbtn" data-action="close-modal" aria-label="閉じる">×</button></div>
+      <p class="info">ChatGPTの「共有」→「リンクをコピー」からURLを貼り付けて保存。<b>教科選択や会話全文のコピーは不要</b>です。取得できた会話は自動で「教科・会話」に登録します。</p>
+      <form id="threadShareForm"><div class="field"><label for="threadShareUrl">会話の共有URL</label><input id="threadShareUrl" type="url" class="ui" required inputmode="url" autocapitalize="off" spellcheck="false" autocomplete="off" value="${escapeHTML(initialUrl)}" placeholder="https://chatgpt.com/share/..."></div>
+      <details id="threadShareConnection" style="margin-top:14px" ${configured?'':'open'}><summary style="cursor:pointer;font-weight:700">🔐 初回設定（Cloudflare Worker）</summary>
+      <div class="field" style="margin-top:10px"><label for="threadShareWorker">Worker URL</label><input class="ui" id="threadShareWorker" value="${escapeHTML(aiEndpoint||defaultShareWorker)}" inputmode="url" autocapitalize="off" spellcheck="false"></div>
+      <div class="field" style="margin-top:10px"><label for="threadSharePassword">学習アプリ用パスワード（OpenAI APIキーではありません）</label><input class="ui" id="threadSharePassword" type="password" autocomplete="off" placeholder="${configured?'このタブでは設定済み':'Cloudflareの STUDY_PASSWORD'}"></div>
+      <p class="info">パスワードはこのブラウザのタブ内のみ保持します。新しいタブでは再入力が必要な場合があります。WorkerにはVer.5.5以降の共有リンク取得コードが必要です。</p></details>
+      <div class="thread-paste-status" id="threadShareStatus" role="status" aria-live="polite">取得に成功した場合のみ会話本文を保存します。共有リンクからの取得は、ChatGPT側の仕様によって失敗する場合があります。</div>
+      <div id="threadShareLinkOnly" class="share-linkonly hide">共有ページから本文を取得できませんでした。<b>リンクだけをブックマークとして保存</b>することはできます（会話本文や質問・回答は保存されません）。<div><button type="button" class="btn secondary sm" data-thread-action="save-link-only">リンクだけを保存</button></div></div>
+      <div class="modal-actions"><button class="btn secondary" type="button" data-action="close-modal">キャンセル</button><button id="threadShareFetch" type="submit" class="btn">🔗 取り込んで保存</button></div></form>
+      <div class="thread-paste-help">同じ共有URLは重複登録しません。既存の会話は開くだけで上書きしません。共有リンクが会話全体でなく一つの回答のみを含む場合、保存内容もその範囲になります。URLの公開範囲と内容に注意してください。</div>`);
+  }
+  async function threadSaveImportedLink(url,data){
+    const id=shareChatId(url);
+    const existing=await threadGet(id);
+    if(existing){await threadOpen(id);renderThreads();return {status:'existing',chat:existing}}
+    const title=String(data.title||'ChatGPTの共有会話').trim().slice(0,160)||'ChatGPTの共有会話';
+    const firstUser=data.messages.find(m=>m.role==='user')?.text||'';
+    const course=threadGuessCourse(title,firstUser);
+    const chat={id,title,course,updated:new Date().toISOString(),messages:data.messages,sourceUrl:url,digest:'',truncated:!!data.truncated};
+    await threadSave(chat);
+    threadMetas=await threadAllMeta();threadMetas.sort((a,b)=>String(b.updated).localeCompare(String(a.updated)));
+    threadCurrent=chat;threadSelection=chat.id;threadCourseFilter='all';renderThreads();threadShowCurrent();
+    return {status:'saved',chat};
+  }
+  async function threadImportFromShare(raw,credentials={},isModal=false){
+    let url;try{url=shareNormalizeURL(raw)}catch(err){shareStatus(err.message,true);return false}
+    let worker=credentials.worker||aiEndpoint||defaultShareWorker;
+    let pass=credentials.password||aiPassword;
+    if(!pass){threadShareModal(url);shareStatus('初回だけ学習アプリ用パスワードを設定してください。OpenAI APIキーは不要です。');return false}
     try{
-      const raw=$('#threadShareUrl').value.trim();const linkUrl=new URL(raw);
-      if(linkUrl.protocol!=='https:'||!['chatgpt.com','chat.openai.com'].includes(linkUrl.hostname)||!/^\/share\/[A-Za-z0-9-]{20,90}\/?$/.test(linkUrl.pathname))throw Error('ChatGPTの「/share/」付き共有URLを入力してください');
-      link='https://chatgpt.com/share/'+linkUrl.pathname.split('/')[2];
-      worker=$('#threadShareWorker').value.trim();const w=new URL(worker);
-      if(w.protocol!=='https:'||w.username||w.password||w.search||w.hash||!w.hostname.endsWith('.workers.dev'))throw Error('Cloudflare Workerのhttps://...workers.devのURLを入力してください');
+      const w=new URL(worker);
+      if(w.protocol!=='https:'||w.username||w.password||w.search||w.hash||!w.hostname.endsWith('.workers.dev'))throw Error('Cloudflare Workerの https://...workers.dev のURLを設定してください');
       worker=w.origin+w.pathname.replace(/\/$/,'');
-      pwd=$('#threadSharePassword').value||aiPassword;
-      if(!pwd)throw Error('Cloudflareに設定した学習アプリ用パスワードを入力してください');
-    }catch(err){status.textContent=err.message;return}
-    button.disabled=true;button.textContent='取得中…';status.textContent='公開された共有ページを読み込んでいます…（API課金なし）';
+    }catch(err){shareStatus('Worker URLを確認してください：'+err.message,true);return false}
+    shareSetBusy(true);shareLastFailedUrl='';const quickLinkOnly=$('#threadQuickLinkOnly');if(quickLinkOnly)quickLinkOnly.classList.add('hide');shareStatus('公開されたChatGPTの共有ページを取得中…');
+    const box=$('#threadShareLinkOnly');if(box)box.classList.add('hide');
     try{
+      const existing=await threadGet(shareChatId(url));
+      if(existing){await threadOpen(existing.id);if(isModal)closeModal();renderThreads();toast('保存済みの会話を開きました（重複登録なし）');return true}
       const abort=new AbortController();const timer=setTimeout(()=>abort.abort(),30000);
-      let res;try{res=await fetch(worker,{method:'POST',headers:{'Content-Type':'application/json','X-Study-Password':pwd},body:JSON.stringify({mode:'import_share',url:link}),signal:abort.signal})}finally{clearTimeout(timer)}
-      let data;try{data=await res.json()}catch{throw Error('Workerから正しいJSONが返されませんでした。Workerのコードが最新版か確認してください')}
-      if(!res.ok)throw Error(data.error||('HTTP '+res.status+'：共有リンクを取り込めませんでした'));
-      if(!Array.isArray(data.messages)||!data.messages.length||data.messages.some(x=>!['user','assistant'].includes(x.role)||typeof x.text!=='string'))throw Error('Workerから会話本文を受け取れませんでした');
-      shareImportPending={sourceUrl:link,title:String(data.title||'ChatGPT共有会話').slice(0,160),messages:data.messages,truncated:!!data.truncated,course:$('#threadShareCourse').value};
-      aiEndpoint=worker;aiPassword=pwd;localStorage.setItem(aiEndpointKey,worker);sessionStorage.setItem('study-hub-ai-password-profile-'+window.studyHubProfile.id,pwd);
-      $('#threadShareTitle').value=shareImportPending.title;
-      const count=shareImportPending.messages.length;
-      status.textContent=`取得成功：${count}件の発言（あなた ${shareImportPending.messages.filter(x=>x.role==='user').length}件、ChatGPT ${shareImportPending.messages.filter(x=>x.role==='assistant').length}件）${data.truncated?'。長い会話の一部は省略されました。':''}。\n内容を確認して「教科に保存」を押してください。`;
-      $('#threadShareSamples').textContent=shareImportPending.messages.slice(0,2).map(m=>(m.role==='user'?'あなた':'ChatGPT')+'：'+m.text.slice(0,180)).join('\n\n');
-      preview.classList.remove('hide');saveBtn.classList.remove('hide');
-    }catch(err){status.textContent='取得できませんでした：'+(err.name==='AbortError'?'通信がタイムアウトしました':err.message)+'\n共有リンクが公開されているか、Workerのコードが更新済みか確認してください。';}
-    finally{button.disabled=false;button.textContent='🔍 会話を再取得'}
+      let res;try{res=await fetch(worker,{method:'POST',headers:{'Content-Type':'application/json','X-Study-Password':pass},body:JSON.stringify({mode:'import_share',url}),signal:abort.signal})}finally{clearTimeout(timer)}
+      let data;try{data=await res.json()}catch{throw Error('Workerから正しいデータが返されませんでした。worker.jsを更新してください')}
+      if(!res.ok)throw Error(String(data.error||'HTTP '+res.status).slice(0,350));
+      if(!Array.isArray(data.messages)||!data.messages.length||data.messages.some(x=>!['user','assistant'].includes(x.role)||typeof x.text!=='string'||!x.text.trim()))throw Error('会話本文を正しく取得できませんでした');
+      const result=await threadSaveImportedLink(url,data);
+      aiEndpoint=worker;aiPassword=pass;localStorage.setItem(aiEndpointKey,worker);sessionStorage.setItem('study-hub-ai-password-profile-'+window.studyHubProfile.id,pass);
+      if(isModal)closeModal();
+      $('#threadDetail')?.scrollIntoView({behavior:'smooth',block:'start'});
+      toast('共有リンクから'+result.chat.messages.length+'件の発言を保存しました（'+threadCourseName(result.chat.course)+'）');
+      return true;
+    }catch(err){
+      shareLastFailedUrl=url;
+      const message='本文を保存できませんでした：'+(err.name==='AbortError'?'30秒で通信がタイムアウトしました':err.message)+'。URLやWorkerの設定、共有ページの公開状態を確認してください。';
+      shareStatus(message,true);
+      if(isModal){const box=$('#threadShareLinkOnly');if(box)box.classList.remove('hide')}else{const quickLinkOnly=$('#threadQuickLinkOnly');if(quickLinkOnly)quickLinkOnly.classList.remove('hide')}
+      return false;
+    }finally{shareSetBusy(false)}
   }
-  async function threadSaveShare(){
-    if(!shareImportPending)return toast('先に共有リンクから会話を取得してください');
-    const p=shareImportPending;
+  async function threadSaveLinkOnly(){
+    if(!shareLastFailedUrl)return toast('先にURLを入力して取得を試してください');
     try{
-      const title=$('#threadShareTitle').value.trim().slice(0,160);
-      if(!title)return toast('タイトルを入力してください');
-      const course=$('#threadShareCourse').value;
-      const id='share-'+p.sourceUrl.split('/').pop();
+      const url=shareLastFailedUrl,id=shareChatId(url);
       const existing=await threadGet(id);
-      if(existing&&!confirm('この共有URLの会話は既に保存されています。内容を更新しますか？\n既存の要点ノートは残します。'))return;
-      const chat={id,title,course,updated:new Date().toISOString(),messages:p.messages,sourceUrl:p.sourceUrl,digest:existing?.digest||'',truncated:p.truncated};
-      await threadSave(chat);shareImportPending=null;closeModal();threadMetas=await threadAllMeta();threadMetas.sort((a,b)=>String(b.updated).localeCompare(String(a.updated)));
-      threadCurrent=chat;threadSelection=chat.id;threadCourseFilter='all';renderThreads();threadShowCurrent();$('#threadDetail')?.scrollIntoView({behavior:'smooth',block:'start'});toast(chat.messages.length+'件の会話を保存しました');
-    }catch(err){toast('保存できませんでした：'+err.message)}
+      if(existing){await threadOpen(id);closeModal();renderThreads();toast('既に保存されているリンクを開きました');return}
+      const chat={id,title:'共有リンク（本文未取得）',course:'other',updated:new Date().toISOString(),messages:[],sourceUrl:url,digest:'※ 共有ページから本文を取得できず、リンクだけを保存しています。',linkOnly:true,truncated:false};
+      await threadSave(chat);shareLastFailedUrl='';closeModal();threadMetas=await threadAllMeta();threadCurrent=chat;threadSelection=id;threadCourseFilter='all';renderThreads();threadShowCurrent();toast('リンクだけ保存しました。会話本文は未取得です');
+    }catch(err){toast('リンクを保存できませんでした：'+err.message)}
   }
+  async function threadFetchShare(e){e.preventDefault();await threadImportFromShare($('#threadShareUrl')?.value||'',{worker:$('#threadShareWorker')?.value?.trim(),password:$('#threadSharePassword')?.value},true)}
+  async function threadQuickShare(e){e.preventDefault();const raw=$('#threadQuickShareUrl')?.value||'';await threadImportFromShare(raw,{},false)}
 
   function threadExportText(){
     if(!threadCurrent)return;
@@ -1126,7 +1157,7 @@ window.bootStudyHub = function(){
     try{
       if(a==='import')return threadImportPicker();
       if(a==='fulltext')return await threadSearchFulltext();
-      if(a==='paste')return threadPasteModal();if(a==='share-import')return threadShareModal();if(a==='save-share')return threadSaveShare();
+      if(a==='paste')return threadPasteModal();if(a==='share-import')return threadShareModal();if(a==='save-link-only')return threadSaveLinkOnly();
       if(a==='new-thread')return threadNewModal(threadCourseFilter==='all'?(courses[0]?.id||'other'):threadCourseFilter);
       if(a==='new-subject')return threadAddSubjectModal();
       if(a==='toggle-subject')return await threadToggleSubject(e.target.closest('[data-course-id]')?.dataset.courseId);
@@ -1145,7 +1176,7 @@ window.bootStudyHub = function(){
   });
   document.addEventListener('input',e=>{if(e.target.id==='threadSearch'){threadQuery=e.target.value;threadFulltextIds=null;threadUpdateList()}else if(e.target.id==='threadPasteText')threadPastePreview()});
   document.addEventListener('change',e=>{if(e.target.id==='threadPasteMode'){threadPastePreview();return}if(e.target.id==='threadCourseFilter'){threadCourseFilter=e.target.value;threadUpdateList()}else if(e.target.id==='threadCourseEdit'&&threadCurrent){threadCurrent.course=e.target.value;threadCurrent.updated=new Date().toISOString();threadSave(threadCurrent).then(()=>threadAllMeta()).then(items=>{threadMetas=items;threadUpdateList()}).catch(err=>toast(err.message))}});
-  document.addEventListener('submit',async e=>{if(e.target.id==='threadShareForm'){e.preventDefault();await threadFetchShare(e)}});
+  document.addEventListener('submit',async e=>{if(e.target.id==='threadShareForm'){e.preventDefault();await threadFetchShare(e)}else if(e.target.id==='threadQuickShareForm'){e.preventDefault();await threadQuickShare(e)}});
   document.addEventListener('submit',async e=>{
     if(e.target.id==='threadCourseForm'){
       e.preventDefault();const name=$('#newSubjectName').value.trim();if(!name)return;
